@@ -1,13 +1,27 @@
-# This analysis is based on soil samples collected in June 2023 at INOCAS farms
-# and processed # by EcoMol.
+#
+# inocas_2023_data_indicators
+# ***************************
+#
+# Purpose:
+#          This analysis is based on soil samples collected at INOCAS and proc-
+#          essed by EcoMol.
+#          Takes the eDNA species table provided by EcoMol and determines the
+#          TerraBio biodiversity indicators. There are also some species accumu-
+#          lation curves to verify sampling completeness.
+#
+#
+# Date             Written by                 Description of changes
+# ***********  *****************  **********************************************
+# Sep 2023     Karen Dyson        Original code.
+#
+# Dec 14 2023  Luis Molina        Adapted to read INOCAS data 2023.
+#
+#
 
-# This file takes the eDNA species table provided by EcoMol and determines the
-# TerraBio biodiversity indicators. There are also some species accumulation
-# curves to verify sampling completeness.
 
 ## ----- Data ingestion & setup -----------------------------------
 
-# libraries
+## ---- Importing libraries ----
 library(ggplot2)
 library(dplyr)
 library(tidyr)
@@ -18,142 +32,90 @@ library(zCompositions)
 library(iNEXT)
 
 source("../../allianceBranding.R")
+
 source("../../functions.R")
 
-source("../../../RCode/KDyson_R_Scripts/triplet_fixer.R") # From my github repository
+source("../../../RCode/KDyson_R_Scripts/triplet_fixer.R") # From Karen's github repository
+
 source("../../../RCode/KDyson_R_Scripts/repeat_multipatt.R") # ditto
 
 source("inocas_2023_data_processing.R")
-remove(list = grep("volume",ls(), value = T))
-remove(abundanceLetter)
+
 
 rare = 50
-inocasSubset = "b-R1" # indicates we're using the buffer/silica samples for R1 primer set.
-hortaGroups <- c(rep("Counterfactual", 3), rep("Forest", 3), rep("Restoration", 3), rep("Syntropic", 3))
 
+# Per treatment
+inocasCompTreatment <- compMatrix(inputMatrix = inocasMatrixLetter)
 
-
-hortaMatrixSmall <-
-    hortaMatrix[grepl(pattern = hortaSubset, rownames(hortaMatrix)),]
-hortaMatrixSmall <-
-    hortaMatrixSmall[, colSums(hortaMatrixSmall) > 0]
-
-hortaLetterSmall <-
-    hortaMatrixLetter[grepl(pattern = hortaSubset, rownames(hortaMatrixLetter)),]
-hortaLetterSmall <-
-    hortaLetterSmall[, colSums(hortaLetterSmall) > 0]
-
-hortaMatrixR1 <-
-    hortaMatrix[grepl(pattern = "R1", rownames(hortaMatrix)),]
-hortaMatrixR1 <-
-    hortaMatrixR1[, colSums(hortaMatrixR1) > 0]
-
-
-hortaCompLetter <- compMatrix(inputMatrix = hortaLetterSmall)
-
-hortaCompMatrix <- compMatrix(inputMatrix = hortaMatrixSmall)
-
-hortaCompR1 <- compMatrix(inputMatrix = hortaMatrixR1)
-
-## ----- Storage method graphs --------------------------------
-
-# plot amount of DNA recovered from each sample by buffer/silica
-ggplot(hortaInfo, aes(x = storage, y = concentrationDNA_nguL)) + 
-    geom_boxplot() + facet_grid(. ~ volumeSampleID)
-
-# plot 'quality' measure for each sample by buffer/silica
-ggplot(hortaInfo, aes(x = storage, y = purityDNA)) + 
-    geom_boxplot() + facet_grid(. ~ volumeSampleID)
-
-# plot all ASV absolute abundance by buffer/silica
-ggplot(hortaASV, aes(x = preservation, y = asvAbsoluteAbundance)) + 
-    geom_boxplot() + geom_jitter()
-
-# plot total ASV absolute abundance grouped by sample for buffer/silica
-hortaSampleASV <- hortaASV %>% group_by(metadata_4, primerName, preservation) %>% 
-    summarise(totalAbund = sum(asvAbsoluteAbundance), countASV = length(unique(ASVHeader)))
-
-ggplot(hortaSampleASV, aes(x = preservation, y = totalAbund)) + 
-    geom_boxplot() + geom_jitter(aes(color = primerName))
-
-ggplot(hortaSampleASV, aes(x = preservation, y = totalAbund)) + 
-    geom_boxplot() + geom_jitter() + 
-    facet_grid(primerName ~ ., scales = "free")
-
-# plot total number of ATVs grouped by sample for buffer/silica
-ggplot(hortaSampleASV, aes(x = preservation, y = countASV)) + 
-    geom_boxplot() + geom_jitter(aes(color = primerName))
-
-ggplot(hortaSampleASV, aes(x = preservation, y = countASV)) + 
-    geom_boxplot() + geom_jitter() + 
-    facet_grid(primerName ~ ., scales = "free")
+# Per sample
+inocasCompMatrix <- compMatrix(inputMatrix = inocasMatrix)
 
 
 ## ----- Accumulation curves ----------------------------------
 
-# create species accumulation curves for both buffer and silica (pretending 6
-# replicates instead of 3)
-plot(specaccum(hortaMatrix[ grepl(pattern = "R1-CF1|R1-CF2|R1-CF3",
-                                   x = rownames(hortaMatrix)), ]),
-     xlab = "Number of replicates [R1]",
-     ylab = "Number of species", ylim = c(10,450))
-plot(specaccum(hortaMatrix[ grepl(pattern = "R1-Co1|R1-Co2|R1-Co3",
-                                   x = rownames(hortaMatrix)), ]),
+# create species accumulation curves
+plot(specaccum(inocasMatrix[ grepl(pattern = "-CF-R1|-CF-R2|-CF-R3",
+                                   x = rownames(inocasMatrix)), ]),
+     xlab = "Number of replicates",
+     ylab = "Number of species", ylim = c(10,1200))
+plot(specaccum(inocasMatrix[ grepl(pattern = "-F-R1|-F-R2|-F-R3",
+                                   x = rownames(inocasMatrix)), ]),
      add = TRUE, col = "green")
-plot(specaccum(hortaMatrix[ grepl(pattern = "R1-Re1|R1-Re2|R1-Re3",
-                                   x = rownames(hortaMatrix)), ]),
+plot(specaccum(inocasMatrix[ grepl(pattern = "-I-R1|-I-R2|-I-R3",
+                                   x = rownames(inocasMatrix)), ]),
      add = TRUE, col = "blue")
-plot(specaccum(hortaMatrix[ grepl(pattern = "R1-Sy1|R1-Sy2|R1-Sy3",
-                                   x = rownames(hortaMatrix)), ]),
-     add = TRUE, col = "red")
-legend(x = 1, y = 400,
-       legend = c("Counterfactual", "Control", "Restoration", "Syntropic"),
-       fill = c("black", "green", "blue", "red"),
+# plot(specaccum(hortaMatrix[ grepl(pattern = "R1-Sy1|R1-Sy2|R1-Sy3",
+#                                    x = rownames(hortaMatrix)), ]),
+#      add = TRUE, col = "red")
+legend(x = 0.5, y = 1300,
+       legend = c("Counterfactual", "Control", "Intervention"),
+       fill = c("black", "green", "blue"), bty = "n", bg = "n",
        cex = 1)
 
 
-# create species accumulation curves for both buffer and silica (pretending 6
-# replicates instead of 3); remove rare species
-plot(specaccum(hortaMatrix[ grepl(pattern = "R1-CF1|R1-CF2|R1-CF3",
-                                   x = rownames(hortaMatrix)), 
-                             colSums(hortaMatrix) > rare]),
-     xlab = "Number of replicates [R1, rare = 50]",
-     ylab = "Number of species", ylim = c(10,200))
-plot(specaccum(hortaMatrix[ grepl(pattern = "R1-Co1|R1-Co2|R1-Co3",
-                                  x = rownames(hortaMatrix)),
-                            colSums(hortaMatrix) > rare]),
+# create species accumulation curves (remove rare species)
+plot(specaccum(inocasMatrix[ grepl(pattern = "-CF-R1|-CF-R2|-CF-R3",
+                                   x = rownames(inocasMatrix)), 
+                             colSums(inocasMatrix) > rare]),
+     xlab = "Number of replicates [rare = 50]",
+     ylab = "Number of species", ylim = c(10,350))
+plot(specaccum(inocasMatrix[ grepl(pattern = "-F-R1|-F-R2|-F-R3",
+                                  x = rownames(inocasMatrix)),
+                            colSums(inocasMatrix) > rare]),
      add = TRUE, col = "green")
-plot(specaccum(hortaMatrix[ grepl(pattern = "R1-Re1|R1-Re2|R1-Re3",
-                                  x = rownames(hortaMatrix)),
-                            colSums(hortaMatrix) > rare]),
+plot(specaccum(inocasMatrix[ grepl(pattern = "-I-R1|-I-R2|-I-R3",
+                                  x = rownames(inocasMatrix)),
+                            colSums(inocasMatrix) > rare]),
      add = TRUE, col = "blue")
-plot(specaccum(hortaMatrix[ grepl(pattern = "R1-Sy1|R1-Sy2|R1-Sy3",
-                                  x = rownames(hortaMatrix)),
-                            colSums(hortaMatrix) > rare]),
-     add = TRUE, col = "red")
-legend(x = 1, y = 200,
-       legend = c("Counterfactual", "Control", "Restoration", "Syntropic"),
-       fill = c("black", "green", "blue", "red"),
+legend(x = 0.75, y = 375,
+       legend = c("Counterfactual", "Control", "Intervention"),
+       fill = c("black", "green", "blue"), bty = "n", bg = "n",
        cex = 1)
 
 
 
-## ----- Proposed Indicator 1: Alpha -------------------------------------------
-# PI1: Alpha diversity
+## ----- Proposed Indicator 1: Alpha diversity  --------------------------------
 
 # Create a table with the alpha diversity measures for each replicate. 
 ## *** NEED TO ADD FIELD (REPLICATE)***
-hortaAlpha<- alphaMetrics(hortaMatrixSmall, 
-                          groupNames = hortaGroups, 
-                          replNames = str_sub(rownames(hortaMatrixSmall), -3,-1))
-hortaAllAlpha<- alphaMetrics(hortaMatrixR1,
-                             groupNames = rep(hortaGroups, 2),
-                             replNames = str_sub(rownames(hortaMatrixR1), -3,-1))
 
-hortaAlphaGroup <- alphaGroupMetrics(hortaMatrixSmall,
-                                     groupNames = hortaGroups)
+groupsLUT <- data.frame(lucode = c("CF", "F", "I"),
+                        luname = c("Counterfactual",
+                                   "Forest",
+                                   "Intervention"))
+ 
+inocasGroups <- groupsLUT[match(str_split(rownames(inocasMatrix), "-", simplify = TRUE)[,3], groupsLUT), 2]
+
+groupNames <- str_split(rownames(inocasMatrix), "-", simplify = T)[,1:3]
+
+groupNames <- paste(groupNames[,1], groupNames[,2], groupNames[,3], sep = "-")
+
+inocasAlphaGroup <- alphaGroupMetrics(inocasMatrix, groupNames = groupNames)
+ 
+ inocasAlphaSample <- inocasAlphaGroup %>% mutate(treat = str_split(inocasAlphaGroup$siteType, "-", simplify = T)[,3]) %>% left_join(., y = groupsLUT, by= c("treat" = "lucode"))
 
 
+# I left Karen's code here to read and understand later ****************** Begin
 # Test to compare site diversities between land use types
 
 # Test for raw species number
@@ -168,154 +130,124 @@ hortaAlphaGroup <- alphaGroupMetrics(hortaMatrixSmall,
 # summary(speciesRLMER)
 # test_speciesRLMER<-car::Anova(mod = speciesRLMER)
 # emmeans::emmeans(speciesRLMER, pairwise~siteType)    
-#   
-# 
-# hortaAlpha %>%
-#     ggplot() +
-#     geom_boxplot(aes(siteType, speciesRichness),
-#                  outlier.shape = NA) +
-#     geom_jitter(
-#         aes(siteType, speciesRichness, color = siteType),
-#         width = 0.1,
-#         height = 0
-#     ) +
-#     labs(color = "Site Type", y = "Raw Species Richness",
-#          x = "Site Type") + 
-#     theme(legend.position="bottom")
+# ************************************************************************** End
 
 
-# Test for ESR
 
+inocasAlphaSample %>%
 
-hortaAlpha %>%
-    mutate(siteType = factor(siteType, levels = c("Counterfactual", "Syntropic", "Forest", "Restoration"))) %>%
-    ggplot() +
-    geom_boxplot(aes(siteType, effectiveSR),
-                 outlier.shape = NA) +
-    geom_jitter(
-        aes(siteType, effectiveSR, color = siteType),
-        width = 0.05,
-        height = 0, size = 4
-    ) +
-    labs(color = "Site Type", y = "Effective Species Richness",
-         x = "Site Type") + 
-    theme(legend.position="bottom",
-          text = element_text(family = "Calibri"))+
-    scale_color_manual(values = supportingColorPalette)
-
-hortaAlphaGroup %>% 
-    mutate(siteType = factor(siteType, levels = c("Counterfactual", "Syntropic", "Forest", "Restoration"))) %>%
-    ggplot(
-        aes(siteType, effectiveSR, fill = siteType)
-        ) +
-    geom_bar(stat = "identity") +
-    labs(fill = "Site Type", 
-         y = "Effective Species Richness",
+ggplot(aes(luname, effectiveSR)) + geom_boxplot() + geom_jitter(aes(col=luname, size = I(2)), width = 0.03) +
+  labs(color = "Site Type", y = "Effective Species Richness",
          x = "Site Type") +
-    theme(legend.position = "bottom") +
-    scale_fill_manual(values = supportingColorPalette) +
-    geom_text(stat='identity', aes(label=round(effectiveSR)),position = position_stack(vjust = 0.5))
+  scale_color_manual(values = supportingColorPalette) +
+  theme(axis.title.x = element_text(size = 16),
+        axis.title.y = element_text(size = 16),
+        axis.text.x = element_text(size = 14))
 
-ggsave("HortaESR_2022.pdf",
-       plot = last_plot(),
-       device = "pdf",
-       path = "OutputImages/",
-       width = 8,
-       height = 5,
-       units = "in",
-       dpi = 300
-)
+ggsave("inocas2023_esr.png", width = 8, height = 5, units = "in", dpi = 300)
 
-## ----- PI2: Beta diversity w/ Aitchison distance -----------------------------
-# aitchison distance uses the euclidian distance of the compositional data that
+
+# Test - After applying a square root transformation
+inocasAlphaGroup <- alphaGroupMetrics(sqrt(inocasMatrix),
+                                      groupNames = groupNames)
+
+
+
+inocasAlphaSample <- inocasAlphaGroup %>% mutate(treat = str_split(inocasAlphaGroup$siteType, "-", simplify = T)[,3]) %>% left_join(., y = groupsLUT, by= c("treat" = "lucode"))
+
+
+inocasAlphaSample %>%
+
+ggplot(aes(luname, effectiveSR)) + geom_boxplot() + geom_jitter(aes(col=luname, size = I(2)), width = 0.03) +
+  labs(color = "Site Type", y = "Effective Species Richness",
+       x = "Site Type",
+       caption = "After applying square root transform.") +
+  scale_color_manual(values = supportingColorPalette) + 
+  theme(axis.title.x = element_text(size = 16),
+        axis.title.y = element_text(size = 16),
+        axis.text.x = element_text(size = 14))
+
+ggsave("inocas2023_esr_sqrt.png", width = 8, height = 5, units = "in", dpi = 300)
+
+
+## ----- Proposed Indicator 2: Beta diversity w/ Aitchison distance
+
+# Aitchison distance uses the euclidian distance of the compositional data that
 # has been center log transformed; see
 # https://www.ncbi.nlm.nih.gov/pmc/articles/PMC7811025/
 
 
-aitchisonPlot <- vegdist(hortaCompMatrix, "euc", diag = F)
-
-min(aitchisonPlot)
-max(aitchisonPlot)
-
-
-
-## create plots
-
-#aitchisonPlot %>% aitHeatmap()
-
-
-levelOrder = c(
-    "Counterfactual-Counterfactual",
-    "Forest-Forest",
-    "Restoration-Restoration",
-    "Syntropic-Syntropic",
-    "Forest-Counterfactual",
-    "Restoration-Counterfactual",
-    "Syntropic-Counterfactual",
-    "Restoration-Forest",
-    "Syntropic-Forest",
-    "Syntropic-Restoration"
-)
-aitComparison(
-    inputDist = aitchisonPlot,
-    remap = lookupSitenames,
-    repeatSamples = TRUE,
-    fillColor = c(
-        supportingColorPalette[c(1, 5, 2, 6, 7, 3, 8)],
-        corporateColorPalette[c(1, 2)],
-        supportingColorPalette[4]
-    ),
-    levelsPlot = levelOrder
-)
 
     
 
 ## ----- PI3: Change in beta diversity -----------------------------------------
 
-# Looking at the overall distance between the treatments. 
+# Distance between sites (samples)
 
+inocasASV$sampleID <- paste0("Site",
+                             inocasASV$metadata_2, "-",
+                             groupsLUT$luname[match(inocasASV$metadata_3, groupsLUT$lucode)])
 
-#aggregate by site 
+inocasASV$treatment <- groupsLUT$luname[match(inocasASV$metadata_3,  groupsLUT$lucode)]
 
-aitchisonSite <- vegdist(hortaCompLetter, "euc") 
+inocasSample <- inocasASV %>%
+  dplyr::select(sampleID, ASVHeader, asvAbsoluteAbundance) %>%
+  group_by(sampleID, ASVHeader) %>%
+  summarise(abundance = sum(asvAbsoluteAbundance))
 
-min(aitchisonSite)
-max(aitchisonSite)
+inocasMatrixSample <- ez.matrify(inocasSample, species.name = "ASVHeader", site.name = "sampleID", abundance = "abundance")
 
-## create plots
+# Per sample
+inocasCompMatrix <- compMatrix(inputMatrix = inocasMatrixSample)
 
-siteHeatmap <- aitchisonSite %>% aitHeatmap(fillColor1 = supportingColorPalette[2], fillColor2 = corporateColorPalette[4])
-siteHeatmap +
-    scale_x_discrete(labels=c("b-R1-Re" = "Restoration",
-                              "b-R1-Co" = "Forest",
-                              "b-R1-Sy" = "Syntropic",
-                              "b-R1-CF" = "Counterfactual",
-                              "s-R1-Re" = "Restoration",
-                              "s-R1-Co" = "Forest",
-                              "s-R1-Sy" = "Syntropic",
-                              "s-R1-CF" = "Counterfactual")) +
-    scale_y_discrete(labels=c("b-R1-Re" = "Restoration",
-                              "b-R1-Co" = "Forest",
-                              "b-R1-Sy" = "Syntropic",
-                              "b-R1-CF" = "Counterfactual",
-                              "s-R1-Re" = "Restoration",
-                              "s-R1-Co" = "Forest",
-                              "s-R1-Sy" = "Syntropic",
-                              "s-R1-CF" = "Counterfactual"))
+remap <- inocasASV %>% 
+  transmute(original = inocasASV$sampleID,
+            pretty = inocasASV$sampleID,
+            treatment = inocasASV$treatment) %>% distinct()
 
-ggsave("HortaDistHeatmap_2022.pdf",
-       plot = last_plot(),
-       device = "pdf",
-       path = "OutputImages/",
-       width = 8,
-       height = 6,
-       units = "in",
-       dpi = 300
+levelOrder = c(
+  "Counterfactual-Counterfactual",
+  "Forest-Forest",
+  "Intervention-Intervention",
+  "Counterfactual-Forest",
+  "Counterfactual-Intervention",
+  "Forest-Intervention"
 )
 
+aitchisonSample <- vegdist(inocasCompMatrix, "euc", diag = FALSE)
 
-#aitComparison(aitchisonSite, lookupSitenames, FALSE)
+min(aitchisonSample)
+max(aitchisonSample)
 
+ait_comparison_sample <- aitComparison(
+  inputDist = aitchisonSample,
+  remap = remap,
+  repeatSamples = TRUE,
+  levelsPlot = levelOrder
+) + 
+  theme(axis.title.y = element_text(size = 16),
+        axis.text.x = element_text(size = 14)) +
+  labs(title = "Distance between sites") +
+  theme(plot.title = element_text(hjust = 0.5))
+
+  ait_comparison_sample
+  
+  ggsave("ait_inocas_sample_box.png", width = 8, height = 7, units = "in", dpi = 300)
+  
+
+# Looking at the overall distance between treatments: heatmap
+
+rownames(inocasCompTreatment) <- groupsLUT$luname[match(rownames(inocasCompTreatment), groupsLUT$lucode)]
+
+aitTreatment <- vegdist(inocasCompTreatment, "euc")
+
+treatmentHeatmap <- aitHeatmap(aitTreatment,
+                           fillColor1 = supportingColorPalette[2],
+                           fillColor2 = corporateColorPalette[4])
+  
+treatmentHeatmap + theme(axis.text.x = element_text(size = 14), axis.text.y = element_text(size = 14))
+
+ggsave("inocas_ait_Heatmap_treatment.png", width = 8, height = 7, units = "in", dpi = 300)
 
 ## ----- PI 4: qualitative assessment ------------------------------------------
 library("FactoMineR")
@@ -323,13 +255,13 @@ library("factoextra")
 # Good tutorial here: http://www.sthda.com/english/articles/31-principal-component-methods-in-r-practical-guide/112-pca-principal-component-analysis-essentials/
 
 # create plot pcas
-pca_plots <- hortaCompMatrix %>%
+pca_plots <- inocasCompMatrix %>%
     PCA(., scale.unit = F, graph = F)
 
 viz_pcaPlots <- fviz_pca_ind(
     pca_plots,
     geom.ind = "point",
-    col.ind = hortaGroups,
+    col.ind = str_split(rownames(inocasCompMatrix), pattern = "-", simplify = T)[,2],
     addEllipses = T,
     ellipse.type = "confidence",
     pointsize = 3,
@@ -338,7 +270,7 @@ viz_pcaPlots <- fviz_pca_ind(
     palette = supportingColorPalette[c(1,3,4,2)]
 )
 ggpubr::ggpar(viz_pcaPlots,
-              title = paste0("Community Composition Visualization using PCA"),#, hortaSubset),
+              title = paste0("Community Composition Visualization using PCA"),
               subtitle = paste0(phylum, collapse = " "), xlab = F, ylab = F, tickslab = F
               )
 ggsave("HortaPCA_2022.pdf",
@@ -370,7 +302,7 @@ fviz_pca_biplot(pca_plots,
 
 
 
-
+# I have kept Karen's code here to read and understand later ************* Begin
 # create plot pcas for both 
 # pca_plotsAll <- hortaCompR1 %>%
 #     PCA(., scale.unit = F, graph = F)
@@ -385,4 +317,4 @@ fviz_pca_biplot(pca_plots,
 # )
 # ggpubr::ggpar(viz_pcaPlotsAll,
 #               title = paste0("Plots - PCA - ", paste0(phylum, collapse = " "), " - R1"))
-
+# ***************************************************************************End
