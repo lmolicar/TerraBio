@@ -16,7 +16,7 @@
 #
 # Dec 14 2023  Luis Molina        Adapted to read INOCAS data 2023.
 #
-#
+# Dec 19 2023  Karen Dyson        Comments added/code review
 
 
 ## ----- Data ingestion & setup -----------------------------------
@@ -35,9 +35,9 @@ source("../../allianceBranding.R")
 
 source("../../functions.R")
 
-source("../../../RCode/KDyson_R_Scripts/triplet_fixer.R") # From Karen's github repository
+source("../../../../../RCode/R_Scripts/triplet_fixer.R") # From Karen's github repository
 
-source("../../../RCode/KDyson_R_Scripts/repeat_multipatt.R") # ditto
+source("../../../../../RCode/R_Scripts/repeat_multipatt.R") # ditto
 
 source("inocas_2023_data_processing.R")
 
@@ -103,18 +103,29 @@ groupsLUT <- data.frame(lucode = c("CF", "F", "I"),
                         luname = c("Counterfactual",
                                    "Forest",
                                    "Intervention"))
+
+# KD 2023-09-19: This next line of code doesn't work
  
 inocasGroups <- groupsLUT[match(str_split(rownames(inocasMatrix), "-", simplify = TRUE)[,3], groupsLUT), 2]
+
+# KD 2023-09-19: Why is this recreating the rownames? breaking apart and gluing back together...
 
 groupNames <- str_split(rownames(inocasMatrix), "-", simplify = T)[,1:3]
 
 groupNames <- paste(groupNames[,1], groupNames[,2], groupNames[,3], sep = "-")
 
+# KD 2023-09-19: No metrics calculated for the replicates? Looks like only the sites, not the site types either. This is the main one used, but the others can help with interpretation and diagnostics.
+
 inocasAlphaGroup <- alphaGroupMetrics(inocasMatrix, groupNames = groupNames)
+
+# KD 2023-09-19: Not sure what inocasAlphaSample is trying to do--"sample" implies something different than "group" but it's joining two tables.
  
  inocasAlphaSample <- inocasAlphaGroup %>% mutate(treat = str_split(inocasAlphaGroup$siteType, "-", simplify = T)[,3]) %>% left_join(., y = groupsLUT, by= c("treat" = "lucode"))
 
 
+# KD 2023-09-19: This code tests for significance using LMER. 
+ 
+ 
 # I left Karen's code here to read and understand later ****************** Begin
 # Test to compare site diversities between land use types
 
@@ -133,7 +144,9 @@ inocasAlphaGroup <- alphaGroupMetrics(inocasMatrix, groupNames = groupNames)
 # ************************************************************************** End
 
 
-
+# KD 2023-09-19: Note colors don't fit the standards--green should be forest etc. There's a ppt that details this.
+ 
+ 
 inocasAlphaSample %>%
 
 ggplot(aes(luname, effectiveSR)) + geom_boxplot() + geom_jitter(aes(col=luname, size = I(2)), width = 0.03) +
@@ -146,6 +159,8 @@ ggplot(aes(luname, effectiveSR)) + geom_boxplot() + geom_jitter(aes(col=luname, 
 
 ggsave("inocas2023_esr.png", width = 8, height = 5, units = "in", dpi = 300)
 
+
+# KD 2023-09-19: Suggest not overwriting an existing table with new values when they contain different data. It is not super impactful here but as a general rule.
 
 # Test - After applying a square root transformation
 inocasAlphaGroup <- alphaGroupMetrics(sqrt(inocasMatrix),
@@ -267,7 +282,7 @@ viz_pcaPlots <- fviz_pca_ind(
     pointsize = 3,
     mean.point = F,
     legend.title = "Site Type",
-    palette = supportingColorPalette[c(1,3,4,2)]
+    palette = supportingColorPalette[c(1,3,4)]
 )
 ggpubr::ggpar(viz_pcaPlots,
               title = paste0("Community Composition Visualization using PCA"),
@@ -283,6 +298,8 @@ ggsave("HortaPCA_2022.pdf",
        dpi = 300
 )
 
+
+# KD 2023-09-19: Suggest also making the replicate PCAs.
 
 viz_pcaPlots_contrib <- fviz_contrib(pca_plots, choice = "ind", axes = 1:2)
 
@@ -300,7 +317,7 @@ fviz_pca_biplot(pca_plots,
 
 
 
-
+# KD 2023-09-19: This code just compares the buffer and silica.
 
 # I have kept Karen's code here to read and understand later ************* Begin
 # create plot pcas for both 

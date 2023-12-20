@@ -1,84 +1,84 @@
-﻿TB_ColName,Keep
-researcher,N
-project,N
-blastPseudoScore,Y
-identificationFiltered,Y
-identificationMaxTaxon,Y
-primerName,Y
-sample,Y
-fileName,N
-relAbundAllSamples,N
-relativeAbundanceOnSample,Y
-sampleTotalAbd,Y
-asvAbsoluteAbundance,Y
-totCleanSampleAbdByMarker,Y
-cleanRelativeAbundanceOnSample,Y
-metadata_1,Y
-metadata_2,Y
-metadata_3,Y
-metadata_4,Y
-primerExpectedLength,Y
-ASVSize,Y
-possibleMetozoa,N
-curatedID,Y
-blastIDOrigin,Y
-IDStatus,Y
-possibleContamination,N
-genusBLASTn,Y
-BLAST_subfamily,Y
-familyBLASTn,Y
-BLAST_suborder,Y
-order_BLASTn,Y
-BLAST_subclass,Y
-classBLASTn,Y
-phylumBLASTn,Y
-BLAST_subphylum,Y
-kingdomBLASTn,Y
-superkingdomBLASTn,Y
-B1_subjectHeader,N
-B1_staxID,N
-B1_subject,N
-B1_identity,N
-B1_qcovhsp,N
-B1_length,N
-B1_mismatches,N
-B1_gaps,N
-B1_queryStart,N
-B1_queryEnd,N
-B1_subjectStart,N
-B1_subjectEnd,N
-B1_eValue,N
-B1_bitscore,N
-B2_subjectHeader,N
-B2_staxID,N
-B2_subject,N
-B2_indentity,N
-B2_qcovhsp,N
-B2_length,N
-B2_mismatches,N
-B2_gaps,N
-B2_queryStart,N
-B2_queryEnd,N
-B2_subjectStart,N
-B2_subjectEnd,N
-B2_eValue,N
-B2_bitscore,N
-B3_subjectHeader,N
-B3_staxID,N
-B3_subject,N
-B3_indentity,N
-B3_qcovhsp,N
-B3_length,N
-B3_mismatches,N
-B3_gaps,N
-B3_queryStart,N
-B3_queryEnd,N
-B3_subjectStart,N
-B3_subjectEnd,N
-B3_eValue,N
-B3_bitscore,N
-ASVHeader,Y
-ASVSequence,Y
-OTU,Y
-PCRControl,N
-propToPCRControl,N
+﻿EM_ColName,TB_ColName,Keep
+Researcher,researcher,N
+Project,project,N
+BLASTn pseudo-score,blastPseudoScore,Y
+Identification,identificationFiltered,Y
+Identification Max. taxonomy,identificationMaxTaxon,Y
+Primer,primerName,Y
+Sample,sample,Y
+Unique_File_name,fileName,N
+Relative abundance to all samples,relAbundAllSamples,N
+Relative abundance on sample,relativeAbundanceOnSample,Y
+Sample total abundance,sampleTotalAbd,Y
+ASV absolute abundance,asvAbsoluteAbundance,Y
+Total clean sample abd. by marker,totCleanSampleAbdByMarker,Y
+Clean relative abd. on sample,cleanRelativeAbundanceOnSample,Y
+Metadata.1,metadata_1,Y
+Metadata.2,metadata_2,Y
+Metadata.3,metadata_3,Y
+Metadata.4,metadata_4,Y
+Primer expected length,primerExpectedLength,Y
+ASV Size (pb),ASVSize,Y
+Possible Metazoa,possibleMetozoa,N
+Final ID (BLASTn),curatedID,Y
+blast ID Origin,blastIDOrigin,Y
+ID status,IDStatus,Y
+Contamination status,possibleContamination,N
+Genus (BLASTn),genusBLASTn,Y
+Subfamily (BLASTn),BLAST_subfamily,Y
+Family (BLASTn),familyBLASTn,Y
+Suborder (BLASTn),BLAST_suborder,Y
+Order (BLASTn),order_BLASTn,Y
+Subclass (BLASTn),BLAST_subclass,Y
+Class (BLASTn),classBLASTn,Y
+Phylum (BLASTn),phylumBLASTn,Y
+Subphylum (BLASTn),BLAST_subphylum,Y
+Kingdom (BLASTn),kingdomBLASTn,Y
+Superkingdom (BLASTn),superkingdomBLASTn,Y
+1_subject header,B1_subjectHeader,N
+1_staxid,B1_staxID,N
+1_subject,B1_subject,N
+1_indentity,B1_identity,N
+1_qcovhsp,B1_qcovhsp,N
+1_length,B1_length,N
+1_mismatches,B1_mismatches,N
+1_gaps,B1_gaps,N
+1_query start,B1_queryStart,N
+1_query end,B1_queryEnd,N
+1_subject start,B1_subjectStart,N
+1_subject end,B1_subjectEnd,N
+1_e-value,B1_eValue,N
+1_bitscore,B1_bitscore,N
+2_subject header,B2_subjectHeader,N
+2_staxid,B2_staxID,N
+2_subject,B2_subject,N
+2_indentity,B2_indentity,N
+2_qcovhsp,B2_qcovhsp,N
+2_length,B2_length,N
+2_mismatches,B2_mismatches,N
+2_gaps,B2_gaps,N
+2_query start,B2_queryStart,N
+2_query end,B2_queryEnd,N
+2_subject start,B2_subjectStart,N
+2_subject end,B2_subjectEnd,N
+2_e-value,B2_eValue,N
+2_bitscore,B2_bitscore,N
+3_subject header,B3_subjectHeader,N
+3_staxid,B3_staxID,N
+3_subject,B3_subject,N
+3_indentity,B3_indentity,N
+3_qcovhsp,B3_qcovhsp,N
+3_length,B3_length,N
+3_mismatches,B3_mismatches,N
+3_gaps,B3_gaps,N
+3_query start,B3_queryStart,N
+3_query end,B3_queryEnd,N
+3_subject start,B3_subjectStart,N
+3_subject end,B3_subjectEnd,N
+3_e-value,B3_eValue,N
+3_bitscore,B3_bitscore,N
+ASV header,ASVHeader,Y
+ASV (Sequence),ASVSequence,Y
+OTU,OTU,Y
+PCR control,PCRControl,N
+Prop. to PCR control,propToPCRControl,N
