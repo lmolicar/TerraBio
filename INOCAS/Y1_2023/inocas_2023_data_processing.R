@@ -15,7 +15,7 @@
 #
 # Dec 14 2023  Luis Molina        Adapted to read INOCAS data 2023.
 #
-#
+# Dec 19 2023  Karen Dyson        Comments added/code review
 
 
 ## ----- Data ingestion ---------------------------------------
@@ -33,7 +33,7 @@ library(dplyr)
 source("../../allianceBranding.R")
 source("../../functions.R")
 source("../../multiyear_functions.R")
-source("../../../RCode/KDyson_R_Scripts/triplet_fixer.R") # adjusted for local access
+source("../../../../../RCode/R_Scripts/triplet_fixer.R") # adjusted for local access
 
 # script variable definitions
 minlibrarySize = 5000
@@ -50,7 +50,7 @@ phylum = c("Arthropoda")
 
 
 
-## First ingest 2022 and 2023 data.
+## First ingest 2023 data.
 
 ## common data
 
@@ -62,9 +62,15 @@ phylum = c("Arthropoda")
 #                required.
 #                Original version created by Karen was stored as
 #                lookupColnames_v1.csv.bak
+# KD 2023-09-19: This will always be true--EcoMol changes column names (schema)
+# each time they send us data. lookupColnames should include EM colnames
+# (changes), TB colnames (constant), and keep (Y/N)
 lookupColnames <- read.csv("lookupColnames.csv")
 lookupSitenames <- read.csv("lookupSitenames.csv")
 
+# KD 2023-09-19: EcoMol changes these each time. Thus this needs to change each
+# time which is why it is in the "Ingest" section... 
+# LM todo: Change infoColnames below to match the INOCASSamples2023 file...
 
 # columns differ from this version
 infoColnames <- c("N", "storage", "volumeSampleID",
@@ -74,7 +80,8 @@ infoColnames <- c("N", "storage", "volumeSampleID",
 
 # 2023 data
 inocas2023Raw <- read.csv("INOCAS_2023_bioinfo_results.csv",
-                        stringsAsFactors = F,sep=",",
+                        stringsAsFactors = F,
+                        sep=",",
                         col.names = lookupColnames$TB_ColName)
 
 # LM 2023-09-25: These names apparently do not match the content of the file.
@@ -87,10 +94,23 @@ inocas2023Raw <- read.csv("INOCAS_2023_bioinfo_results.csv",
 # ID.EcoMol. - Ok         
 # X.ng.μL. - Ok
 # A260.280 - Ok
+
+# KD 2023-09-19: Bad import for inocas2023Info because infoColnames above is
+# incorrect. Remember, EcoMol changes colnames for the purity etc. information
+# each time. 
+
 inocas2023Info <- read.csv("INOCASSamples2023.csv",
-                      stringsAsFactors = F,
+                      stringsAsFactors = F, 
                       col.names = infoColnames,
                       header = T)
+
+
+# KD 2023-09-19: Why do these functions have no arguments? Also do not recommend
+# this approach to creating tables or doing it like this within a function.
+# lulut should be created outside the function and passed as an argument.
+# Otherwise you have to change the function for each different dataset...
+# in additon, some tables are not passed to this function, so this function will not
+# work. The function has no idea what inocas2023Info is.
 
 qc_plot_purity <- function(){
   
@@ -105,6 +125,9 @@ qc_plot_purity <- function(){
   # Purity was imported as character -> convert to numeric
   inocas2023Info <- inocas2023Info%>% mutate(purityDNA = as.numeric(str_trim(purityDNA)))
   
+  # KD 2023-09-19: This was imported as character due to white space in the input table. 
+  
+  
   inocas2023Info %>% select(EcoMolID, purityDNA) %>% 
     mutate(code = str_split(EcoMolID, "_", simplify = T)[,4]) %>%
     left_join(., y = lulut, by = "code") %>%
@@ -113,7 +136,7 @@ qc_plot_purity <- function(){
     labs(x = "Land use type", y = "Purity (nm)")
 }
 
-
+# KD 2023-09-19: Same comments as above.
 qc_plot_concentration <- function(){
   
   lulut <- data.frame(rbind(
@@ -134,6 +157,8 @@ qc_plot_concentration <- function(){
     labs(x = "Land use type", y = expression("Concentration" ~ ng~mu~L^{-1}))
   
 }
+
+# KD 2023-09-19: the summarize isn't necessary unless there is filtering already done. it should recreate the column "sampleTotalAbd"...
 
 qc_plot_sampleTotalAbundance <- function(){
   
@@ -158,6 +183,11 @@ qc_plot_sampleTotalAbundance <- function(){
 
 # Remove columns we don't need for analysis.
 head(inocas2023Raw)
+
+# KD 2023-09-19: This should be saved as the 'filtered' table. See
+# horta_2023_data_processing for example. Also want to strip the '>' from the
+# ASV header for downstream analysis. 
+
 inocas2023Raw <- inocas2023Raw[ , lookupColnames$Keep == "Y"]
 head(inocas2023Raw)
 # Initially 44948 items
@@ -175,16 +205,22 @@ stopifnot(length(unique(inocas2023Raw$sample[inocas2023Raw$sampleTotalAbd <= min
 print(removedSites)
 remove(removedSites)
 
-# Remove ASVs that don't meet criteria.
 
+# Remove ASVs that don't meet criteria.
 
 inocas2023Raw <- inocas2023Raw[ inocas2023Raw$primerExpectedLength == "in range", ]
 # 2023-09-26 - Result: it dropped 6717 lines; now 32461
+# KD 2023-09-19: I see this as 37148; the table() supports this as 7800 FALSE and 37148 TRUE.
 
 # 2023-09-26 - Results: It dropped 29482; now 2979, but all the sites
 #              reported arthropods (we have data for th 23 samples)
 inocas2023Raw <- inocas2023Raw[ inocas2023Raw$phylumBLASTn %in% phylum, ]
+# KD 2023-09-19: I see this as 3388; table(inocas2023Raw$phylumBLASTn) supports this. The presentation has the correct number.
 
+
+# KD 2023-09-19: why is this a function? multiple arguments are not passed to
+# this function, so this function will not work. The function has no idea what
+# inocas2023Raw or lulut are, for example...
 
 qc_plot_asvAbsAbundance <- function(){
   
@@ -196,6 +232,8 @@ qc_plot_asvAbsAbundance <- function(){
                           caption = "Filtered data")
   
 }
+
+# KD 2023-09-19: Same comment as above.
 
 qc_plot_sampleTotalAbundance <- function(){
   
@@ -210,6 +248,8 @@ qc_plot_sampleTotalAbundance <- function(){
   
 }
 
+# KD 2023-09-19: Same comment as above.
+
 qc_plot_counts_landuse <- function(){
   
   inocas2023Raw %>% select(sample, classBLASTn) %>%
@@ -220,6 +260,8 @@ qc_plot_counts_landuse <- function(){
     labs(x = "BLASTn Class", title = "Counterfactual")
   
 }
+
+# KD 2023-09-19: Same comment as above, but with the addition of "curlanduse"...
 
 qc_plot_asvcounts_class_landuse <- function(){
   
@@ -244,6 +286,9 @@ qc_plot_asvcounts_class_landuse <- function(){
   ggsave(dstfile, units = "in", width = 6, height = 3)
   
 }
+
+
+# KD 2023-09-19: Same comment as above, but with the addition of "curlanduse"...
 
 
 qc_plot_asvcounts_order_landuse <- function(){
@@ -271,7 +316,13 @@ qc_plot_asvcounts_order_landuse <- function(){
 }
 
 
-# Checks in Apui 2022 case - Should apply in INOCAS? Always?
+# Luis: Checks in Apui 2022 case - Should apply in INOCAS? Always?
+
+# KD 2023-09-19: Yes, these checks should always be completed. This is an
+# important part of data filtering, with asvAbsoluteAbundance being the prefered
+# metric based on what we discussed in the previous learning session. See also
+# horta_2023_data_processing. Also suggest remove the "if (TRUE)".
+
 if (TRUE){
   
   plot(
@@ -293,10 +344,19 @@ if (TRUE){
   
   inocas2023Raw <- inocas2023Raw[ inocas2023Raw$asvAbsoluteAbundance > minAbsoluteAbund, ]
   
+  # KD 2023-09-19: 2702 rows following filtering
+  
+  # KD 2023-09-19: This change is required b/c this code doesn't use inocas2023Filt. 
+  
   inocasASV <- inocas2023Raw
   
   # What is this for? Where is it used?
   # Species abundance (absolute) per sample
+  
+  # KD 2023-09-19: This is one of the two main site-species matrices used for
+  # the indicator calculation... should be calculated after all filtering steps
+  # are complete.
+  
   inocasMatrix <- ez.matrify(inocasASV,
                              species.name = "ASVHeader",
                              site.name = "sample",
@@ -333,7 +393,12 @@ inocasMatrixLetter <- ez.matrify(inocasLetter, species.name = "ASVHeader",
 #test to make sure everything got in
 any((colSums(inocasMatrixLetter)-colSums(inocasMatrix)) > 0 )
 
+# KD 2023-09-19: Recommend removing data tables note needed for the indicator calculations because it reduces memory load etc.
+
 #remove(inocas2023Raw)
+
+
+# KD 2023-09-19: These were to-dos for previous code, recommend removing.
 
 # to do list:
 #   + add column names for 2023
