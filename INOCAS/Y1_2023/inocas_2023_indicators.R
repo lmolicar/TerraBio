@@ -22,22 +22,15 @@
 ## ----- Data ingestion & setup -----------------------------------
 
 ## ---- Importing libraries ----
-library(ggplot2)
-library(dplyr)
-library(tidyr)
-library(vegan)
-library(stringr)
-library(compositions)
-library(zCompositions)
 library(iNEXT)
 
 source("../../allianceBranding.R")
 
 source("../../functions.R")
 
-source("../../../../../RCode/R_Scripts/triplet_fixer.R") # From Karen's github repository
+source("../../../RCode/KDyson_R_Scripts/triplet_fixer.R") # From Karen's github repository. Path adjusted to local access.
 
-source("../../../../../RCode/R_Scripts/repeat_multipatt.R") # ditto
+source("../../../RCode/KDyson_R_Scripts/repeat_multipatt.R") # ditto
 
 source("inocas_2023_data_processing.R")
 
@@ -96,31 +89,39 @@ legend(x = 0.75, y = 375,
 
 ## ----- Proposed Indicator 1: Alpha diversity  --------------------------------
 
-# Create a table with the alpha diversity measures for each replicate. 
-## *** NEED TO ADD FIELD (REPLICATE)***
-
+# A lookup table to translate the land use code into a "nice" name.
 groupsLUT <- data.frame(lucode = c("CF", "F", "I"),
                         luname = c("Counterfactual",
                                    "Forest",
                                    "Intervention"))
 
-# KD 2023-09-19: This next line of code doesn't work
+# KD 2023-09-19: This next line of code doesn't work.
+
+# LM 2024-01-11: Fixed.
  
-inocasGroups <- groupsLUT[match(str_split(rownames(inocasMatrix), "-", simplify = TRUE)[,3], groupsLUT), 2]
+sampleTreatments <- groupsLUT[match(str_split(rownames(inocasMatrix), "-", simplify = TRUE)[,3], groupsLUT$lucode), 2]
 
 # KD 2023-09-19: Why is this recreating the rownames? breaking apart and gluing back together...
+# LM 2024-01-11: I wanted to build sample names by dropping the replicate code. Is the purpose clearer this way? I also renamed the output variable
+sampleNames <- unlist(lapply(rownames(inocasMatrix),
+                             FUN = function(x){str_sub(x, 1, tail(unlist(gregexpr("-", x)), 1)-1)}))
 
-groupNames <- str_split(rownames(inocasMatrix), "-", simplify = T)[,1:3]
+#sampleNames <- str_split(rownames(inocasMatrix), "-", simplify = T)[,1:3]
 
-groupNames <- paste(groupNames[,1], groupNames[,2], groupNames[,3], sep = "-")
+#groupNames <- paste(groupNames[,1], groupNames[,2], groupNames[,3], sep = "-")
 
 # KD 2023-09-19: No metrics calculated for the replicates? Looks like only the sites, not the site types either. This is the main one used, but the others can help with interpretation and diagnostics.
+# LM 2024-01-11: Thanks for advice. I will include diagnostics in a new version after this round of checks.
 
-inocasAlphaGroup <- alphaGroupMetrics(inocasMatrix, groupNames = groupNames)
+#inocasSampleAlpha <- alphaGroupMetrics(inocasMatrix, groupNames = groupNames)
 
 # KD 2023-09-19: Not sure what inocasAlphaSample is trying to do--"sample" implies something different than "group" but it's joining two tables.
+
+#inocasAlphaSample <- inocasAlphaGroup %>% mutate(treat = str_split(inocasAlphaGroup$siteType, "-", simplify = T)[,3]) %>% left_join(., y = groupsLUT, by= c("treat" = "lucode"))
+
+# LM 2024-01-11: I was not clear about it. I wanted to estimate ESR for each sample/site and plot them by treatment. Is the purpose clearer now?
  
- inocasAlphaSample <- inocasAlphaGroup %>% mutate(treat = str_split(inocasAlphaGroup$siteType, "-", simplify = T)[,3]) %>% left_join(., y = groupsLUT, by= c("treat" = "lucode"))
+inocasSampleAlpha <- alphaGroupMetrics(inocasMatrix, groupNames = sampleNames) %>% mutate(treat = str_split(inocasAlphaGroup$siteType, "-", simplify = T)[,3]) %>% left_join(., y = groupsLUT, by= c("treat" = "lucode"))
 
 
 # KD 2023-09-19: This code tests for significance using LMER. 
@@ -145,14 +146,14 @@ inocasAlphaGroup <- alphaGroupMetrics(inocasMatrix, groupNames = groupNames)
 
 
 # KD 2023-09-19: Note colors don't fit the standards--green should be forest etc. There's a ppt that details this.
+# LM 2024-01-11: I think I fixed it. 
  
- 
-inocasAlphaSample %>%
+inocasSampleAlpha %>%
 
 ggplot(aes(luname, effectiveSR)) + geom_boxplot() + geom_jitter(aes(col=luname, size = I(2)), width = 0.03) +
   labs(color = "Site Type", y = "Effective Species Richness",
          x = "Site Type") +
-  scale_color_manual(values = supportingColorPalette) +
+  scale_color_manual(values = supportingColorPalette[c(1,3,4)]) +
   theme(axis.title.x = element_text(size = 16),
         axis.title.y = element_text(size = 16),
         axis.text.x = element_text(size = 14))
@@ -162,22 +163,23 @@ ggsave("inocas2023_esr.png", width = 8, height = 5, units = "in", dpi = 300)
 
 # KD 2023-09-19: Suggest not overwriting an existing table with new values when they contain different data. It is not super impactful here but as a general rule.
 
+# LM 2024-01-11: Thanks for the advice. Now generating a new table for this.
+
 # Test - After applying a square root transformation
-inocasAlphaGroup <- alphaGroupMetrics(sqrt(inocasMatrix),
-                                      groupNames = groupNames)
+inocasSampleSqrtAlpha <- alphaGroupMetrics(sqrt(inocasMatrix), groupNames = sampleNames) %>% mutate(treat = str_split(inocasAlphaGroup$siteType, "-", simplify = T)[,3]) %>% left_join(., y = groupsLUT, by= c("treat" = "lucode"))
 
 
 
-inocasAlphaSample <- inocasAlphaGroup %>% mutate(treat = str_split(inocasAlphaGroup$siteType, "-", simplify = T)[,3]) %>% left_join(., y = groupsLUT, by= c("treat" = "lucode"))
+#inocasAlphaSample <- inocasAlphaGroup %>% mutate(treat = str_split(inocasAlphaGroup$siteType, "-", simplify = T)[,3]) %>% left_join(., y = groupsLUT, by= c("treat" = "lucode"))
 
 
-inocasAlphaSample %>%
+inocasSampleSqrtAlpha %>%
 
 ggplot(aes(luname, effectiveSR)) + geom_boxplot() + geom_jitter(aes(col=luname, size = I(2)), width = 0.03) +
   labs(color = "Site Type", y = "Effective Species Richness",
        x = "Site Type",
        caption = "After applying square root transform.") +
-  scale_color_manual(values = supportingColorPalette) + 
+  scale_color_manual(values = supportingColorPalette[c(1,3,4)]) + 
   theme(axis.title.x = element_text(size = 16),
         axis.title.y = element_text(size = 16),
         axis.text.x = element_text(size = 14))
@@ -199,26 +201,36 @@ ggsave("inocas2023_esr_sqrt.png", width = 8, height = 5, units = "in", dpi = 300
 
 # Distance between sites (samples)
 
-inocasASV$sampleID <- paste0("Site",
-                             inocasASV$metadata_2, "-",
-                             groupsLUT$luname[match(inocasASV$metadata_3, groupsLUT$lucode)])
 
-inocasASV$treatment <- groupsLUT$luname[match(inocasASV$metadata_3,  groupsLUT$lucode)]
+# LM 2024-01-11: Code not required ********************************** Begin
+#                it repeats what was done during data processing
 
-inocasSample <- inocasASV %>%
-  dplyr::select(sampleID, ASVHeader, asvAbsoluteAbundance) %>%
-  group_by(sampleID, ASVHeader) %>%
-  summarise(abundance = sum(asvAbsoluteAbundance))
+inocas2023Filtered$sampleID <- paste0("Site",
+                                     inocas2023Filtered$metadata_2, "-",
+                            groupsLUT$luname[match(inocas2023Filtered$metadata_3, groupsLUT$lucode)])
 
-inocasMatrixSample <- ez.matrify(inocasSample, species.name = "ASVHeader", site.name = "sampleID", abundance = "abundance")
+inocas2023Filtered$treatment <- groupsLUT$luname[match(inocas2023Filtered$metadata_3,  groupsLUT$lucode)]
+
+# LM 2024-01-12: I haven't done any filtering, so I think I do not need to summarize. By specifying the sampleID the function ez.matrify will aggregate the values per sample. Am I right?
+
+# inocasSample <- inocas2023Filtered %>%
+#    dplyr::select(sampleID, ASVHeader, asvAbsoluteAbundance) %>%
+#    group_by(sampleID, ASVHeader) %>%
+#    summarise(abundance = sum(asvAbsoluteAbundance))
+
+#inocasMatrixSample <- ez.matrify(inocasSample, species.name = "ASVHeader", site.name = "sampleID", abundance = "abundance")
+
+inocasMatrixSample <- ez.matrify(inocas2023Filtered, species.name = "ASVHeader", site.name = "sampleID", abundance = "asvAbsoluteAbundance")
 
 # Per sample
 inocasCompMatrix <- compMatrix(inputMatrix = inocasMatrixSample)
 
-remap <- inocasASV %>% 
-  transmute(original = inocasASV$sampleID,
-            pretty = inocasASV$sampleID,
-            treatment = inocasASV$treatment) %>% distinct()
+# ******************************************************************* End
+
+remap <- inocas2023Filtered %>% 
+  transmute(original = inocas2023Filtered$sampleID,
+            pretty = inocas2023Filtered$sampleID,
+            treatment = inocas2023Filtered$treatment) %>% distinct()
 
 levelOrder = c(
   "Counterfactual-Counterfactual",
