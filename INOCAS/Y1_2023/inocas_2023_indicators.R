@@ -34,6 +34,8 @@ source("../../../RCode/KDyson_R_Scripts/repeat_multipatt.R") # ditto
 
 source("inocas_2023_data_processing.R")
 
+# Special flags
+saveplots <- FALSE
 
 rare = 50
 
@@ -95,33 +97,62 @@ groupsLUT <- data.frame(lucode = c("CF", "F", "I"),
                                    "Forest",
                                    "Intervention"))
 
-# KD 2023-09-19: This next line of code doesn't work.
 
-# LM 2024-01-11: Fixed.
- 
 sampleTreatments <- groupsLUT[match(str_split(rownames(inocasMatrix), "-", simplify = TRUE)[,3], groupsLUT$lucode), 2]
 
-# KD 2023-09-19: Why is this recreating the rownames? breaking apart and gluing back together...
-# LM 2024-01-11: I wanted to build sample names by dropping the replicate code. Is the purpose clearer this way? I also renamed the output variable
+# Building sample names by dropping the replicate code
 sampleNames <- unlist(lapply(rownames(inocasMatrix),
-                             FUN = function(x){str_sub(x, 1, tail(unlist(gregexpr("-", x)), 1)-1)}))
+  FUN = function(x){str_sub(x, 1, tail(unlist(gregexpr("-", x)), 1)-1)}))
 
-#sampleNames <- str_split(rownames(inocasMatrix), "-", simplify = T)[,1:3]
 
-#groupNames <- paste(groupNames[,1], groupNames[,2], groupNames[,3], sep = "-")
-
-# KD 2023-09-19: No metrics calculated for the replicates? Looks like only the sites, not the site types either. This is the main one used, but the others can help with interpretation and diagnostics.
-# LM 2024-01-11: Thanks for advice. I will include diagnostics in a new version after this round of checks.
-
-#inocasSampleAlpha <- alphaGroupMetrics(inocasMatrix, groupNames = groupNames)
-
-# KD 2023-09-19: Not sure what inocasAlphaSample is trying to do--"sample" implies something different than "group" but it's joining two tables.
-
-#inocasAlphaSample <- inocasAlphaGroup %>% mutate(treat = str_split(inocasAlphaGroup$siteType, "-", simplify = T)[,3]) %>% left_join(., y = groupsLUT, by= c("treat" = "lucode"))
-
-# LM 2024-01-11: I was not clear about it. I wanted to estimate ESR for each sample/site and plot them by treatment. Is the purpose clearer now?
+# Estimate ESR for each sample/site and plot them by treatment
  
-inocasSampleAlpha <- alphaGroupMetrics(inocasMatrix, groupNames = sampleNames) %>% mutate(treat = str_split(inocasAlphaGroup$siteType, "-", simplify = T)[,3]) %>% left_join(., y = groupsLUT, by= c("treat" = "lucode"))
+inocasSampleAlpha <- alphaGroupMetrics(inocasMatrix, groupNames = sampleNames)
+inocasSampleAlpha <- inocasSampleAlpha %>% mutate(treat = str_split(siteType, "-", simplify = T)[,3]) %>% left_join(., y = groupsLUT, by= c("treat" = "lucode"))
+
+
+#--- Raw species richness broken down by farm
+
+siteType <- str_split(rownames(inocasMatrix), "-", simplify = T)[,3]
+
+replN <- str_remove(str_split(rownames(inocasMatrix), "-", simplify = T)[,4], "R")
+
+inocasReplicateAlpha <- alphaMetrics(inocasMatrix, sampleTreatments, replN)
+
+inocasReplicateAlpha <- inocasReplicateAlpha %>% mutate(farm = str_split(siteNames, "-", simplify = T)[,2])
+
+
+# x-axis labels justification. Tip from:
+# https://datavizpyr.com/rotate-x-axis-text-labels-in-ggplot2/
+inocasReplicateAlpha %>% 
+  ggplot(aes(x = siteType, y = speciesRichness)) + geom_boxplot() +
+  facet_grid(.~farm) + 
+  geom_jitter(aes(col = siteType), width = 0.05) +
+  labs(color = "Site Type",
+       y = "Raw Species Richness",
+       x = "Site Type") +
+  scale_color_manual(values = supportingColorPalette[c(1,3,4)]) +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+if (saveplots)
+  ggsave("inocas2023_rawSR_per-farm.png", width = 8, height = 5, units = "in", dpi = 300)
+
+#--- Raw species richness per replicate and site type
+inocasReplicateAlpha %>%
+  ggplot(aes(x = siteType, y = speciesRichness)) +
+  geom_boxplot(outlier.shape = NA)+
+  geom_jitter(aes(siteType,
+                  speciesRichness,
+                  col = siteType),
+              width = 0.10) +
+  scale_color_manual(values = supportingColorPalette[c(1,3,4)])+
+  labs(x = "Site type", y = "Raw Species Richness", color = "Site type")
+
+# For the report, print the average species number
+aggregate(inocasReplicateAlpha$effectiveSR, by = list(inocasReplicateAlpha$siteType), FUN = mean)
+
+if (saveplots)
+  ggsave("inocas2023_rawSR_per-replicate-sitetype.png", width = 8, height = 5, units = "in", dpi = 300)
 
 
 # KD 2023-09-19: This code tests for significance using LMER. 
@@ -145,36 +176,32 @@ inocasSampleAlpha <- alphaGroupMetrics(inocasMatrix, groupNames = sampleNames) %
 # ************************************************************************** End
 
 
-# KD 2023-09-19: Note colors don't fit the standards--green should be forest etc. There's a ppt that details this.
-# LM 2024-01-11: I think I fixed it. 
+# KD 2023-09-19: Color standards: green should be forest etc. There's a ppt that details this.
  
 inocasSampleAlpha %>%
 
-ggplot(aes(luname, effectiveSR)) + geom_boxplot() + geom_jitter(aes(col=luname, size = I(2)), width = 0.03) +
+ggplot(aes(luname, effectiveSR)) + geom_boxplot() + geom_jitter(aes(col=luname, size = I(3)), width = 0.03) +
   labs(color = "Site Type", y = "Effective Species Richness",
          x = "Site Type") +
   scale_color_manual(values = supportingColorPalette[c(1,3,4)]) +
   theme(axis.title.x = element_text(size = 16),
         axis.title.y = element_text(size = 16),
-        axis.text.x = element_text(size = 14))
+        axis.text.x = element_text(size = 14)) +
+  guides(col = guide_legend(override.aes = list(size = 4)))
 
-ggsave("inocas2023_esr.png", width = 8, height = 5, units = "in", dpi = 300)
+if (saveplots)
+  ggsave("inocas2023_esr.png", width = 8, height = 5, units = "in", dpi = 300)
 
-
-# KD 2023-09-19: Suggest not overwriting an existing table with new values when they contain different data. It is not super impactful here but as a general rule.
-
-# LM 2024-01-11: Thanks for the advice. Now generating a new table for this.
+# Info for the report: average species richness
+aggregate(inocasSampleAlpha$effectiveSR, by = list(inocasSampleAlpha$treat), FUN = mean)
 
 # Test - After applying a square root transformation
-inocasSampleSqrtAlpha <- alphaGroupMetrics(sqrt(inocasMatrix), groupNames = sampleNames) %>% mutate(treat = str_split(inocasAlphaGroup$siteType, "-", simplify = T)[,3]) %>% left_join(., y = groupsLUT, by= c("treat" = "lucode"))
+inocasSampleSqrtAlpha <- alphaGroupMetrics(sqrt(inocasMatrix), groupNames = sampleNames)
 
-
-
-#inocasAlphaSample <- inocasAlphaGroup %>% mutate(treat = str_split(inocasAlphaGroup$siteType, "-", simplify = T)[,3]) %>% left_join(., y = groupsLUT, by= c("treat" = "lucode"))
+inocasSampleSqrtAlpha <- inocasSampleSqrtAlpha %>% mutate(treat = str_split(siteType, "-", simplify = T)[,3]) %>% left_join(., y = groupsLUT, by= c("treat" = "lucode"))
 
 
 inocasSampleSqrtAlpha %>%
-
 ggplot(aes(luname, effectiveSR)) + geom_boxplot() + geom_jitter(aes(col=luname, size = I(2)), width = 0.03) +
   labs(color = "Site Type", y = "Effective Species Richness",
        x = "Site Type",
@@ -184,7 +211,8 @@ ggplot(aes(luname, effectiveSR)) + geom_boxplot() + geom_jitter(aes(col=luname, 
         axis.title.y = element_text(size = 16),
         axis.text.x = element_text(size = 14))
 
-ggsave("inocas2023_esr_sqrt.png", width = 8, height = 5, units = "in", dpi = 300)
+if (saveplots)
+  ggsave("inocas2023_esr_sqrt.png", width = 8, height = 5, units = "in", dpi = 300)
 
 
 ## ----- Proposed Indicator 2: Beta diversity w/ Aitchison distance
@@ -211,15 +239,7 @@ inocas2023Filtered$sampleID <- paste0("Site",
 
 inocas2023Filtered$treatment <- groupsLUT$luname[match(inocas2023Filtered$metadata_3,  groupsLUT$lucode)]
 
-# LM 2024-01-12: I haven't done any filtering, so I think I do not need to summarize. By specifying the sampleID the function ez.matrify will aggregate the values per sample. Am I right?
-
-# inocasSample <- inocas2023Filtered %>%
-#    dplyr::select(sampleID, ASVHeader, asvAbsoluteAbundance) %>%
-#    group_by(sampleID, ASVHeader) %>%
-#    summarise(abundance = sum(asvAbsoluteAbundance))
-
-#inocasMatrixSample <- ez.matrify(inocasSample, species.name = "ASVHeader", site.name = "sampleID", abundance = "abundance")
-
+# LM 2024-01-12: I haven't done any filtering, so I think I do not need to summarize. By specifying the sampleID the function ez.matrify will aggregate the values per sample.
 inocasMatrixSample <- ez.matrify(inocas2023Filtered, species.name = "ASVHeader", site.name = "sampleID", abundance = "asvAbsoluteAbundance")
 
 # Per sample
@@ -259,7 +279,8 @@ ait_comparison_sample <- aitComparison(
 
   ait_comparison_sample
   
-  ggsave("ait_inocas_sample_box.png", width = 8, height = 7, units = "in", dpi = 300)
+  if (saveplots)
+    ggsave("ait_inocas_sample_box.png", width = 8, height = 7, units = "in", dpi = 300)
   
 
 # Looking at the overall distance between treatments: heatmap
@@ -272,9 +293,10 @@ treatmentHeatmap <- aitHeatmap(aitTreatment,
                            fillColor1 = supportingColorPalette[2],
                            fillColor2 = corporateColorPalette[4])
   
-treatmentHeatmap + theme(axis.text.x = element_text(size = 14), axis.text.y = element_text(size = 14))
+treatmentHeatmap + theme(axis.text.x = element_text(size = 18), axis.text.y = element_text(size = 18))
 
-ggsave("inocas_ait_Heatmap_treatment.png", width = 8, height = 7, units = "in", dpi = 300)
+if (saveplots)
+  ggsave("inocas_ait_Heatmap_treatment2.png", width = 8, height = 7, units = "in", dpi = 300)
 
 ## ----- PI 4: qualitative assessment ------------------------------------------
 library("FactoMineR")
@@ -300,10 +322,12 @@ ggpubr::ggpar(viz_pcaPlots,
               title = paste0("Community Composition Visualization using PCA"),
               subtitle = paste0(phylum, collapse = " "), xlab = F, ylab = F, tickslab = F
               )
-ggsave("HortaPCA_2022.pdf",
+
+if (saveplots)
+  ggsave("INOCAS_PCA_2023.png",
        plot = last_plot(),
-       device = "pdf",
-       path = "OutputImages/",
+       device = "png",
+       path = ".",
        width = 8,
        height = 5,
        units = "in",
