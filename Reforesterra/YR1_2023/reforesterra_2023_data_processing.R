@@ -1,1 +1,246 @@
-{"payload":{"allShortcutsEnabled":false,"fileTree":{"Reforesterra/YR1_2023":{"items":[{"name":"Map of Land Use Systems.png","path":"Reforesterra/YR1_2023/Map of Land Use Systems.png","contentType":"file"},{"name":"Reforesterra-Complete_analysis_results-2023-10-25.csv","path":"Reforesterra/YR1_2023/Reforesterra-Complete_analysis_results-2023-10-25.csv","contentType":"file"},{"name":"lookupSitename2023.csv","path":"Reforesterra/YR1_2023/lookupSitename2023.csv","contentType":"file"},{"name":"reforesterra_2023_data_processing.R","path":"Reforesterra/YR1_2023/reforesterra_2023_data_processing.R","contentType":"file"},{"name":"reforesterra_2023_indicators.R","path":"Reforesterra/YR1_2023/reforesterra_2023_indicators.R","contentType":"file"}],"totalCount":5},"Reforesterra":{"items":[{"name":"YR1_2023","path":"Reforesterra/YR1_2023","contentType":"directory"}],"totalCount":1},"":{"items":[{"name":"CafeApui","path":"CafeApui","contentType":"directory"},{"name":"Horta","path":"Horta","contentType":"directory"},{"name":"INOCAS","path":"INOCAS","contentType":"directory"},{"name":"OutputImages","path":"OutputImages","contentType":"directory"},{"name":"Reforesterra","path":"Reforesterra","contentType":"directory"},{"name":"archive","path":"archive","contentType":"directory"},{"name":"area_estimation","path":"area_estimation","contentType":"directory"},{"name":".gitignore","path":".gitignore","contentType":"file"},{"name":"LICENSE","path":"LICENSE","contentType":"file"},{"name":"README.md","path":"README.md","contentType":"file"},{"name":"TerraBio.Rproj","path":"TerraBio.Rproj","contentType":"file"},{"name":"allianceBranding.R","path":"allianceBranding.R","contentType":"file"},{"name":"functions.R","path":"functions.R","contentType":"file"},{"name":"lookupColnames.csv","path":"lookupColnames.csv","contentType":"file"},{"name":"multiyear_functions.R","path":"multiyear_functions.R","contentType":"file"}],"totalCount":15}},"fileTreeProcessingTime":13.534790999999998,"foldersToFetch":[],"repo":{"id":354976629,"defaultBranch":"main","name":"TerraBio","ownerLogin":"sig-gis","currentUserCanPush":false,"isFork":false,"isEmpty":false,"createdAt":"2021-04-05T21:23:35.000Z","ownerAvatar":"https://avatars.githubusercontent.com/u/1566875?v=4","public":true,"private":false,"isOrgOwned":true},"symbolsExpanded":false,"treeExpanded":true,"refInfo":{"name":"main","listCacheKey":"v0:1617814615.505866","canEdit":false,"refType":"branch","currentOid":"4bd26bc99490a80a629bf4b1a719672fa85d76e7"},"path":"Reforesterra/YR1_2023/reforesterra_2023_data_processing.R","currentUser":null,"blob":{"rawLines":["# This analysis is based on soil samples collected at Reforesterra and processed","# by EcoMol. There are three main land uses: CF = counter factual, R =","# control/forest, I = intervention; and some variants: CF2 = riparian","# counterfatual, IA and IB + ??.  The 2023 analysis is the first year.","","# This file take the eDNA species table provided by EcoMol and prepares them for","# analysis.","","# Code written Dec. 2023 by Karen Dyson","","# to do list:","#   + need to look at which ASVs should be combined or not...","#   + check high ASV loss. Degenerate primers.","#   + add diagnostics/plotting","#   + add diagnostics for what ASVs are lost","","","## ----- Data ingestion ---------------------------------------","","# libraries","library(ggplot2)","library(gridExtra)","library(tidyr)","library(vegan)","library(stringr)","library(dplyr)","","# Ingest codes","source(\"../../../../RCode/R_Scripts/triplet_fixer.R\")","source(\"functions.R\")","","# script variable definitions","minlibrarySize = 5000","minRelativeAbund = 0.05","minAbsoluteAbund = 5","","#Reitmeier, S., Hitch, T.C., Treichel, N., Fikas, N., Hausmann, B., Ramer-Tait,","#A.E., Neuhaus, K., Berry, D., Haller, D., Lagkouvardos, I. and Clavel, T.,","#2021. Handling of spurious sequences affects the outcome of high-throughput 16S","#rRNA gene amplicon profiling. ISME Communications, 1(1), pp.1-12.","","phylum = c(\"Arthropoda\") ","#phylum = c(\"Annelida\", \"Nematoda\", \"Platyhelminthes\", \"Arthropoda\", \"Mollusca\") #worms and insects","","","","## Ingest 2023 data.","","## common data","lookupColnames <- read.csv(\"lookupColnames.csv\")","lookupSitenames2023 <- read.csv(\"Reforesterra/YR1_2023/lookupSitename2023.csv\", strip.white = T)","","# remove Tbio-RTERRA-5-CF-R2 from sitenames because it failed and is not in the ASV data.","lookupSitenames2023 <- lookupSitenames2023[lookupSitenames2023$sample.code != \"Tbio-RTERRA-5-CF-R2\",]","","","infoColnames2023 <- c(\"N\", \"sampleID\", \"siteType\", \"labVolume\",","                      \"amplificationSuccess\", \"replicate\",","                      \"EcoMolID\", \"concentrationDNA_nguL\",","                      \"purityDNA\")","","","","# 2023 eDNA data import","        temp <- lookupColnames[order(lookupColnames$EM_OrderRTerra2023), ] ","        temp <- temp$TB_ColName[which(!is.na(temp$EM_ColNameRTerra2023) & !is.na(temp$EM_OrderRTerra2023))]","","    rterra2023Raw <- read.csv(\"Reforesterra/YR1_2023/Reforesterra-Complete_analysis_results-2023-10-25.csv\",","                             stringsAsFactors = F,","                             col.names = temp)","    ","    ","    ## WAITING ON THIS INFORMATION","    # horta2023Info <- read.csv(\"Horta/Yr2_2023/HortaSamples2023.csv\",","    #                           stringsAsFactors = F,","    #                           col.names = infoColnames2023,","    #                           header = T)","    # ","    # ","    # ecoMolRawSummary(horta2022Raw)","    # ecoMolRawSummary(horta2023Raw)","    # ","    # horta2023Raw %>%","    #     group_by(identificationMaxTaxon) %>%","    #     summarise(asvAbsoluteAbundance)","    ","    ","    ","## ----- Data cleaning and setup | 2023 -------------------------------","","# Remove the ASVHeader \">\" character","    rterra2023Raw$ASVHeader <- str_sub(rterra2023Raw$ASVHeader, 2, -1)","","# Remove columns we don't need for analysis.","head(rterra2023Raw)","rterra2023Filt <- rterra2023Raw[ , lookupColnames$TB_ColName[which(!is.na(lookupColnames$EM_ColNameRTerra2023) &","                                                                    lookupColnames$Keep == \"Y\")]]","head(rterra2023Filt)","","# Remove the controls in the filtered data","rterra2023Filt <- rterra2023Filt[!(rterra2023Filt$sample == \"EM135c3-Neg\"), ]","","# Look at phylum in the raw data","table(rterra2023Filt$phylumBLASTn)","","ggplot(rterra2023Filt, aes(x = phylumBLASTn)) + ","    geom_bar() + coord_flip()","","","","# Create a group columns (first should be lc-site-replicates, second is lc-site, third is prettified lc only)","","# For Reforesterra in 2023, metadata_2 is the site number, _3 through _5 are different codes for the lc, and _7 is the replicate. Can do this either by using the lookup table (merge + paste) or str_sub/str_replace_all. The challenge is that they have intervention A and B for one of the sites. There are also two types of counterfactual.","","","","rterra2023Filt <- merge(rterra2023Filt,","                        lookupSitenames2023[ , 2:10],","                        by.x = \"sample\", by.y = \"sample.code\")","","# lc-site-replicates and lc-site; lc only handled by \"treatment\"","rterra2023Filt <- rterra2023Filt %>%","    mutate(LCSiteRep = paste0(treatment.code.original, \"-S\", site.code, \"-R\", replicate),","           LCSite    = paste0(treatment.code.original, \"-S\", site.code))","","","# Clean the data based on our quality variables","    # Remove sites not meeting minimum library size","    print(unique(rterra2023Filt$sampleTotalAbd))","    #rterra2023Filt %>% dplyr::select(sample, sampleTotalAbd) %>% unique()","    removedSites <- unique(rterra2023Filt$sample[rterra2023Filt$sampleTotalAbd <= minlibrarySize])","    rterra2023Filt <- rterra2023Filt[ !(rterra2023Filt$sample %in% removedSites) , ]","    stopifnot(length(unique(rterra2023Filt$sample[rterra2023Filt$sampleTotalAbd <= minlibrarySize])) == 0)","","    print(removedSites)","","    # Remove ASVs not meeting primer expected length","    rterra2023Filt <- rterra2023Filt[ rterra2023Filt$primerExpectedLength == \"in range\", ]","    ","    # Filter on the phylum","    rterra2023Filt <- rterra2023Filt[ rterra2023Filt$phylumBLASTn %in% phylum, ]","    ","  ","","# ----- * Data quality checks | 2023 -------------------------------","","# Examine 2023 DNA concentration.","    ","    # Waiting on data from EcoMOL","# ","# p0 <- ggplot(subset(horta2022Info, storage == \"Silica\"),","#              aes(x = volumeSampleID, y = concentrationDNA_nguL)) + ","#     geom_boxplot() + geom_point(color = \"green\") +","#     ylim(5,80) + xlab(\"LC type (silica 2022)\")","#     ","#     grid.arrange(p0, p1, p2, nrow=2)","#     ","# # Examine 2023 DNA purity.","#     ","#     p1 <- ggplot(subset(horta2022Info, storage == \"Buffer\"),","#                  aes(x = volumeSampleID, y = purityDNA)) + ","#         geom_boxplot() + geom_point(color = \"darkgreen\") +","#         ylim(1.45,2) + xlab(\"LC type (buffer 2022)\")","#     ","# ","#     grid.arrange(p0, p1, ncol=2)    ","#     ","#     remove(p0, p1, p2)","    ","# add analysis notes here","    ","# Look at ASV absolute abundance","","    ggplot(rterra2023Filt, aes(x = treatment, y = asvAbsoluteAbundance)) + ","        geom_boxplot() ","    # if needed, repeat for Raw data.","","    #what are the v. high ASVs?","    rterra2023Filt[rterra2023Filt$asvAbsoluteAbundance > 5000, ]","    # One Coleoptera (possibly lesser mealworm Alphitobius diaperinus or relative) found in Riparian pasture. ","    ","# look at sample total abundance","","    ggplot(rterra2023Filt, aes(x = LCSite, y = sampleTotalAbd)) + ","        geom_point() ","    ","","    ","# ----- Filter for rare species | 2023 -------------------------","","# We want to remove rare species that could be errors ","","# Remove ASVs below minimum relative abundance on sample. ","    plot(","        rterra2023Filt$asvAbsoluteAbundance,","        rterra2023Filt$relativeAbundanceOnSample,","        ylim = c(0, .01),","        xlim = c(0, 50)","    )","    abline(v = minAbsoluteAbund, col = \"red\")","    ","    print(\"2023 filt. ASV < min absolute abundance:\")","    print(table(rterra2023Filt$asvAbsoluteAbundance < minAbsoluteAbund))","    ","    rterra2023Filt <- rterra2023Filt[ rterra2023Filt$asvAbsoluteAbundance >= minAbsoluteAbund, ]","    ","","# ----- Create Matrices | 2023 ---------------------------------------","    ","    # Create a matrix with replicates as individual \"sites\"","    ","    rterra2023Matrix <- ez.matrify(rterra2023Filt, species.name = \"ASVHeader\",","                                  site.name = \"sample\", abundance = \"asvAbsoluteAbundance\")","    ","    hist(colSums(rterra2023Matrix), breaks = 50)","    ","    # Create a matrix where the replicates for sites are combined","    ","    rterra2023LCSite <- rterra2023Filt %>%","        dplyr::select(LCSite, ASVHeader, asvAbsoluteAbundance) %>%","        group_by(LCSite, ASVHeader) %>%","        summarise(abundance = sum(asvAbsoluteAbundance))","    ","    rterraSite2023Matrix <- ez.matrify(rterra2023LCSite, species.name = \"ASVHeader\",","                                      site.name = \"LCSite\", abundance = \"abundance\")","    ","    #test to make sure everything got in","    any((colSums(rterraSite2023Matrix)-colSums(rterra2023Matrix)) != 0 )","    ","    ","    # Create a matrix where all land uses across sites are combined. Note that","    # this may need to change based on what IA and IB actually are... there is","    # also a problem with different n.","    ","    rterra2023LC <- rterra2023Filt %>%","        dplyr::select(treatment.code.original, ASVHeader, asvAbsoluteAbundance) %>%","        group_by(treatment.code.original, ASVHeader) %>%","        summarise(abundance = sum(asvAbsoluteAbundance))","    ","    rterraLC2023Matrix <- ez.matrify(rterra2023LC, species.name = \"ASVHeader\",","                                       site.name = \"treatment.code.original\", abundance = \"abundance\")","    ","    #test to make sure everything got in","    any((colSums(rterraLC2023Matrix)-colSums(rterra2023Matrix)) != 0 )","    ","    "],"stylingDirectives":[[{"start":0,"end":80,"cssClass":"pl-c"},{"start":0,"end":1,"cssClass":"pl-c"}],[{"start":0,"end":70,"cssClass":"pl-c"},{"start":0,"end":1,"cssClass":"pl-c"}],[{"start":0,"end":69,"cssClass":"pl-c"},{"start":0,"end":1,"cssClass":"pl-c"}],[{"start":0,"end":70,"cssClass":"pl-c"},{"start":0,"end":1,"cssClass":"pl-c"}],[],[{"start":0,"end":80,"cssClass":"pl-c"},{"start":0,"end":1,"cssClass":"pl-c"}],[{"start":0,"end":11,"cssClass":"pl-c"},{"start":0,"end":1,"cssClass":"pl-c"}],[],[{"start":0,"end":39,"cssClass":"pl-c"},{"start":0,"end":1,"cssClass":"pl-c"}],[],[{"start":0,"end":13,"cssClass":"pl-c"},{"start":0,"end":1,"cssClass":"pl-c"}],[{"start":0,"end":61,"cssClass":"pl-c"},{"start":0,"end":1,"cssClass":"pl-c"}],[{"start":0,"end":46,"cssClass":"pl-c"},{"start":0,"end":1,"cssClass":"pl-c"}],[{"start":0,"end":30,"cssClass":"pl-c"},{"start":0,"end":1,"cssClass":"pl-c"}],[{"start":0,"end":44,"cssClass":"pl-c"},{"start":0,"end":1,"cssClass":"pl-c"}],[],[],[{"start":0,"end":63,"cssClass":"pl-c"},{"start":0,"end":1,"cssClass":"pl-c"}],[],[{"start":0,"end":11,"cssClass":"pl-c"},{"start":0,"end":1,"cssClass":"pl-c"}],[{"start":8,"end":15,"cssClass":"pl-smi"}],[{"start":8,"end":17,"cssClass":"pl-smi"}],[{"start":8,"end":13,"cssClass":"pl-smi"}],[{"start":8,"end":13,"cssClass":"pl-smi"}],[{"start":8,"end":15,"cssClass":"pl-smi"}],[{"start":8,"end":13,"cssClass":"pl-smi"}],[],[{"start":0,"end":14,"cssClass":"pl-c"},{"start":0,"end":1,"cssClass":"pl-c"}],[{"start":7,"end":52,"cssClass":"pl-s"},{"start":7,"end":8,"cssClass":"pl-pds"},{"start":51,"end":52,"cssClass":"pl-pds"}],[{"start":7,"end":20,"cssClass":"pl-s"},{"start":7,"end":8,"cssClass":"pl-pds"},{"start":19,"end":20,"cssClass":"pl-pds"}],[],[{"start":0,"end":29,"cssClass":"pl-c"},{"start":0,"end":1,"cssClass":"pl-c"}],[{"start":0,"end":14,"cssClass":"pl-v"},{"start":15,"end":16,"cssClass":"pl-k"},{"start":17,"end":21,"cssClass":"pl-c1"}],[{"start":0,"end":16,"cssClass":"pl-v"},{"start":17,"end":18,"cssClass":"pl-k"},{"start":19,"end":23,"cssClass":"pl-c1"}],[{"start":0,"end":16,"cssClass":"pl-v"},{"start":17,"end":18,"cssClass":"pl-k"},{"start":19,"end":20,"cssClass":"pl-c1"}],[],[{"start":0,"end":79,"cssClass":"pl-c"},{"start":0,"end":1,"cssClass":"pl-c"}],[{"start":0,"end":75,"cssClass":"pl-c"},{"start":0,"end":1,"cssClass":"pl-c"}],[{"start":0,"end":80,"cssClass":"pl-c"},{"start":0,"end":1,"cssClass":"pl-c"}],[{"start":0,"end":66,"cssClass":"pl-c"},{"start":0,"end":1,"cssClass":"pl-c"}],[],[{"start":0,"end":6,"cssClass":"pl-v"},{"start":7,"end":8,"cssClass":"pl-k"},{"start":11,"end":23,"cssClass":"pl-s"},{"start":11,"end":12,"cssClass":"pl-pds"},{"start":22,"end":23,"cssClass":"pl-pds"}],[{"start":0,"end":99,"cssClass":"pl-c"},{"start":0,"end":1,"cssClass":"pl-c"}],[],[],[],[{"start":0,"end":20,"cssClass":"pl-c"},{"start":0,"end":1,"cssClass":"pl-c"}],[],[{"start":0,"end":14,"cssClass":"pl-c"},{"start":0,"end":1,"cssClass":"pl-c"}],[{"start":0,"end":14,"cssClass":"pl-smi"},{"start":15,"end":17,"cssClass":"pl-k"},{"start":27,"end":47,"cssClass":"pl-s"},{"start":27,"end":28,"cssClass":"pl-pds"},{"start":46,"end":47,"cssClass":"pl-pds"}],[{"start":0,"end":19,"cssClass":"pl-smi"},{"start":20,"end":22,"cssClass":"pl-k"},{"start":32,"end":78,"cssClass":"pl-s"},{"start":32,"end":33,"cssClass":"pl-pds"},{"start":77,"end":78,"cssClass":"pl-pds"},{"start":80,"end":91,"cssClass":"pl-v"},{"start":92,"end":93,"cssClass":"pl-k"},{"start":94,"end":95,"cssClass":"pl-c1"}],[],[{"start":0,"end":89,"cssClass":"pl-c"},{"start":0,"end":1,"cssClass":"pl-c"}],[{"start":0,"end":19,"cssClass":"pl-smi"},{"start":20,"end":22,"cssClass":"pl-k"},{"start":23,"end":42,"cssClass":"pl-smi"},{"start":43,"end":62,"cssClass":"pl-smi"},{"start":62,"end":63,"cssClass":"pl-k"},{"start":63,"end":74,"cssClass":"pl-smi"},{"start":75,"end":77,"cssClass":"pl-k"},{"start":78,"end":99,"cssClass":"pl-s"},{"start":78,"end":79,"cssClass":"pl-pds"},{"start":98,"end":99,"cssClass":"pl-pds"}],[],[],[{"start":0,"end":16,"cssClass":"pl-smi"},{"start":17,"end":19,"cssClass":"pl-k"},{"start":22,"end":25,"cssClass":"pl-s"},{"start":22,"end":23,"cssClass":"pl-pds"},{"start":24,"end":25,"cssClass":"pl-pds"},{"start":27,"end":37,"cssClass":"pl-s"},{"start":27,"end":28,"cssClass":"pl-pds"},{"start":36,"end":37,"cssClass":"pl-pds"},{"start":39,"end":49,"cssClass":"pl-s"},{"start":39,"end":40,"cssClass":"pl-pds"},{"start":48,"end":49,"cssClass":"pl-pds"},{"start":51,"end":62,"cssClass":"pl-s"},{"start":51,"end":52,"cssClass":"pl-pds"},{"start":61,"end":62,"cssClass":"pl-pds"}],[{"start":22,"end":44,"cssClass":"pl-s"},{"start":22,"end":23,"cssClass":"pl-pds"},{"start":43,"end":44,"cssClass":"pl-pds"},{"start":46,"end":57,"cssClass":"pl-s"},{"start":46,"end":47,"cssClass":"pl-pds"},{"start":56,"end":57,"cssClass":"pl-pds"}],[{"start":22,"end":32,"cssClass":"pl-s"},{"start":22,"end":23,"cssClass":"pl-pds"},{"start":31,"end":32,"cssClass":"pl-pds"},{"start":34,"end":57,"cssClass":"pl-s"},{"start":34,"end":35,"cssClass":"pl-pds"},{"start":56,"end":57,"cssClass":"pl-pds"}],[{"start":22,"end":33,"cssClass":"pl-s"},{"start":22,"end":23,"cssClass":"pl-pds"},{"start":32,"end":33,"cssClass":"pl-pds"}],[],[],[],[{"start":0,"end":23,"cssClass":"pl-c"},{"start":0,"end":1,"cssClass":"pl-c"}],[{"start":8,"end":12,"cssClass":"pl-smi"},{"start":13,"end":15,"cssClass":"pl-k"},{"start":16,"end":30,"cssClass":"pl-smi"},{"start":37,"end":51,"cssClass":"pl-smi"},{"start":51,"end":52,"cssClass":"pl-k"},{"start":52,"end":70,"cssClass":"pl-smi"}],[{"start":8,"end":12,"cssClass":"pl-smi"},{"start":13,"end":15,"cssClass":"pl-k"},{"start":16,"end":20,"cssClass":"pl-smi"},{"start":20,"end":21,"cssClass":"pl-k"},{"start":21,"end":31,"cssClass":"pl-smi"},{"start":38,"end":39,"cssClass":"pl-k"},{"start":45,"end":49,"cssClass":"pl-smi"},{"start":49,"end":50,"cssClass":"pl-k"},{"start":50,"end":70,"cssClass":"pl-smi"},{"start":72,"end":73,"cssClass":"pl-k"},{"start":74,"end":75,"cssClass":"pl-k"},{"start":81,"end":85,"cssClass":"pl-smi"},{"start":85,"end":86,"cssClass":"pl-k"},{"start":86,"end":104,"cssClass":"pl-smi"}],[],[{"start":4,"end":17,"cssClass":"pl-smi"},{"start":18,"end":20,"cssClass":"pl-k"},{"start":30,"end":107,"cssClass":"pl-s"},{"start":30,"end":31,"cssClass":"pl-pds"},{"start":106,"end":107,"cssClass":"pl-pds"}],[{"start":29,"end":45,"cssClass":"pl-v"},{"start":46,"end":47,"cssClass":"pl-k"},{"start":48,"end":49,"cssClass":"pl-c1"}],[{"start":29,"end":38,"cssClass":"pl-v"},{"start":39,"end":40,"cssClass":"pl-k"},{"start":41,"end":45,"cssClass":"pl-smi"}],[],[],[{"start":4,"end":34,"cssClass":"pl-c"},{"start":4,"end":5,"cssClass":"pl-c"}],[{"start":4,"end":70,"cssClass":"pl-c"},{"start":4,"end":5,"cssClass":"pl-c"}],[{"start":4,"end":53,"cssClass":"pl-c"},{"start":4,"end":5,"cssClass":"pl-c"}],[{"start":4,"end":61,"cssClass":"pl-c"},{"start":4,"end":5,"cssClass":"pl-c"}],[{"start":4,"end":43,"cssClass":"pl-c"},{"start":4,"end":5,"cssClass":"pl-c"}],[{"start":4,"end":6,"cssClass":"pl-c"},{"start":4,"end":5,"cssClass":"pl-c"}],[{"start":4,"end":6,"cssClass":"pl-c"},{"start":4,"end":5,"cssClass":"pl-c"}],[{"start":4,"end":36,"cssClass":"pl-c"},{"start":4,"end":5,"cssClass":"pl-c"}],[{"start":4,"end":36,"cssClass":"pl-c"},{"start":4,"end":5,"cssClass":"pl-c"}],[{"start":4,"end":6,"cssClass":"pl-c"},{"start":4,"end":5,"cssClass":"pl-c"}],[{"start":4,"end":22,"cssClass":"pl-c"},{"start":4,"end":5,"cssClass":"pl-c"}],[{"start":4,"end":46,"cssClass":"pl-c"},{"start":4,"end":5,"cssClass":"pl-c"}],[{"start":4,"end":41,"cssClass":"pl-c"},{"start":4,"end":5,"cssClass":"pl-c"}],[],[],[],[{"start":0,"end":71,"cssClass":"pl-c"},{"start":0,"end":1,"cssClass":"pl-c"}],[],[{"start":0,"end":36,"cssClass":"pl-c"},{"start":0,"end":1,"cssClass":"pl-c"}],[{"start":4,"end":17,"cssClass":"pl-smi"},{"start":17,"end":18,"cssClass":"pl-k"},{"start":18,"end":27,"cssClass":"pl-smi"},{"start":28,"end":30,"cssClass":"pl-k"},{"start":39,"end":52,"cssClass":"pl-smi"},{"start":52,"end":53,"cssClass":"pl-k"},{"start":53,"end":62,"cssClass":"pl-smi"},{"start":64,"end":65,"cssClass":"pl-c1"},{"start":67,"end":68,"cssClass":"pl-k"},{"start":68,"end":69,"cssClass":"pl-c1"}],[],[{"start":0,"end":44,"cssClass":"pl-c"},{"start":0,"end":1,"cssClass":"pl-c"}],[{"start":5,"end":18,"cssClass":"pl-smi"}],[{"start":0,"end":14,"cssClass":"pl-smi"},{"start":15,"end":17,"cssClass":"pl-k"},{"start":18,"end":31,"cssClass":"pl-smi"},{"start":35,"end":49,"cssClass":"pl-smi"},{"start":49,"end":50,"cssClass":"pl-k"},{"start":50,"end":60,"cssClass":"pl-smi"},{"start":67,"end":68,"cssClass":"pl-k"},{"start":74,"end":88,"cssClass":"pl-smi"},{"start":88,"end":89,"cssClass":"pl-k"},{"start":89,"end":109,"cssClass":"pl-smi"},{"start":111,"end":112,"cssClass":"pl-k"}],[{"start":68,"end":82,"cssClass":"pl-smi"},{"start":82,"end":83,"cssClass":"pl-k"},{"start":83,"end":87,"cssClass":"pl-smi"},{"start":88,"end":90,"cssClass":"pl-k"},{"start":91,"end":94,"cssClass":"pl-s"},{"start":91,"end":92,"cssClass":"pl-pds"},{"start":93,"end":94,"cssClass":"pl-pds"}],[{"start":5,"end":19,"cssClass":"pl-smi"}],[],[{"start":0,"end":42,"cssClass":"pl-c"},{"start":0,"end":1,"cssClass":"pl-c"}],[{"start":0,"end":14,"cssClass":"pl-smi"},{"start":15,"end":17,"cssClass":"pl-k"},{"start":18,"end":32,"cssClass":"pl-smi"},{"start":33,"end":34,"cssClass":"pl-k"},{"start":35,"end":49,"cssClass":"pl-smi"},{"start":49,"end":50,"cssClass":"pl-k"},{"start":50,"end":56,"cssClass":"pl-smi"},{"start":57,"end":59,"cssClass":"pl-k"},{"start":60,"end":73,"cssClass":"pl-s"},{"start":60,"end":61,"cssClass":"pl-pds"},{"start":72,"end":73,"cssClass":"pl-pds"}],[],[{"start":0,"end":32,"cssClass":"pl-c"},{"start":0,"end":1,"cssClass":"pl-c"}],[{"start":6,"end":20,"cssClass":"pl-smi"},{"start":20,"end":21,"cssClass":"pl-k"},{"start":21,"end":33,"cssClass":"pl-smi"}],[],[{"start":7,"end":21,"cssClass":"pl-smi"},{"start":27,"end":28,"cssClass":"pl-v"},{"start":29,"end":30,"cssClass":"pl-k"},{"start":31,"end":43,"cssClass":"pl-smi"},{"start":46,"end":47,"cssClass":"pl-k"}],[{"start":15,"end":16,"cssClass":"pl-k"}],[],[],[],[{"start":0,"end":109,"cssClass":"pl-c"},{"start":0,"end":1,"cssClass":"pl-c"}],[],[{"start":0,"end":337,"cssClass":"pl-c"},{"start":0,"end":1,"cssClass":"pl-c"}],[],[],[],[{"start":0,"end":14,"cssClass":"pl-smi"},{"start":15,"end":17,"cssClass":"pl-k"},{"start":24,"end":38,"cssClass":"pl-smi"}],[{"start":24,"end":43,"cssClass":"pl-smi"},{"start":47,"end":48,"cssClass":"pl-c1"},{"start":48,"end":49,"cssClass":"pl-k"},{"start":49,"end":51,"cssClass":"pl-c1"}],[{"start":24,"end":28,"cssClass":"pl-v"},{"start":29,"end":30,"cssClass":"pl-k"},{"start":31,"end":39,"cssClass":"pl-s"},{"start":31,"end":32,"cssClass":"pl-pds"},{"start":38,"end":39,"cssClass":"pl-pds"},{"start":41,"end":45,"cssClass":"pl-v"},{"start":46,"end":47,"cssClass":"pl-k"},{"start":48,"end":61,"cssClass":"pl-s"},{"start":48,"end":49,"cssClass":"pl-pds"},{"start":60,"end":61,"cssClass":"pl-pds"}],[],[{"start":0,"end":64,"cssClass":"pl-c"},{"start":0,"end":1,"cssClass":"pl-c"}],[{"start":0,"end":14,"cssClass":"pl-smi"},{"start":15,"end":17,"cssClass":"pl-k"},{"start":18,"end":32,"cssClass":"pl-smi"},{"start":34,"end":35,"cssClass":"pl-k"}],[{"start":11,"end":20,"cssClass":"pl-v"},{"start":21,"end":22,"cssClass":"pl-k"},{"start":30,"end":53,"cssClass":"pl-smi"},{"start":55,"end":59,"cssClass":"pl-s"},{"start":55,"end":56,"cssClass":"pl-pds"},{"start":58,"end":59,"cssClass":"pl-pds"},{"start":61,"end":70,"cssClass":"pl-smi"},{"start":72,"end":76,"cssClass":"pl-s"},{"start":72,"end":73,"cssClass":"pl-pds"},{"start":75,"end":76,"cssClass":"pl-pds"},{"start":78,"end":87,"cssClass":"pl-smi"}],[{"start":11,"end":17,"cssClass":"pl-v"},{"start":21,"end":22,"cssClass":"pl-k"},{"start":30,"end":53,"cssClass":"pl-smi"},{"start":55,"end":59,"cssClass":"pl-s"},{"start":55,"end":56,"cssClass":"pl-pds"},{"start":58,"end":59,"cssClass":"pl-pds"},{"start":61,"end":70,"cssClass":"pl-smi"}],[],[],[{"start":0,"end":47,"cssClass":"pl-c"},{"start":0,"end":1,"cssClass":"pl-c"}],[{"start":4,"end":51,"cssClass":"pl-c"},{"start":4,"end":5,"cssClass":"pl-c"}],[{"start":17,"end":31,"cssClass":"pl-smi"},{"start":31,"end":32,"cssClass":"pl-k"},{"start":32,"end":46,"cssClass":"pl-smi"}],[{"start":4,"end":74,"cssClass":"pl-c"},{"start":4,"end":5,"cssClass":"pl-c"}],[{"start":4,"end":16,"cssClass":"pl-smi"},{"start":17,"end":19,"cssClass":"pl-k"},{"start":27,"end":41,"cssClass":"pl-smi"},{"start":41,"end":42,"cssClass":"pl-k"},{"start":42,"end":48,"cssClass":"pl-smi"},{"start":49,"end":63,"cssClass":"pl-smi"},{"start":63,"end":64,"cssClass":"pl-k"},{"start":64,"end":78,"cssClass":"pl-smi"},{"start":79,"end":80,"cssClass":"pl-k"},{"start":80,"end":81,"cssClass":"pl-k"},{"start":82,"end":96,"cssClass":"pl-smi"}],[{"start":4,"end":18,"cssClass":"pl-smi"},{"start":19,"end":21,"cssClass":"pl-k"},{"start":22,"end":36,"cssClass":"pl-smi"},{"start":38,"end":39,"cssClass":"pl-k"},{"start":40,"end":54,"cssClass":"pl-smi"},{"start":54,"end":55,"cssClass":"pl-k"},{"start":55,"end":61,"cssClass":"pl-smi"},{"start":62,"end":66,"cssClass":"pl-k"},{"start":67,"end":79,"cssClass":"pl-smi"}],[{"start":28,"end":42,"cssClass":"pl-smi"},{"start":42,"end":43,"cssClass":"pl-k"},{"start":43,"end":49,"cssClass":"pl-smi"},{"start":50,"end":64,"cssClass":"pl-smi"},{"start":64,"end":65,"cssClass":"pl-k"},{"start":65,"end":79,"cssClass":"pl-smi"},{"start":80,"end":81,"cssClass":"pl-k"},{"start":81,"end":82,"cssClass":"pl-k"},{"start":83,"end":97,"cssClass":"pl-smi"},{"start":101,"end":103,"cssClass":"pl-k"},{"start":104,"end":105,"cssClass":"pl-c1"}],[],[{"start":10,"end":22,"cssClass":"pl-smi"}],[],[{"start":4,"end":52,"cssClass":"pl-c"},{"start":4,"end":5,"cssClass":"pl-c"}],[{"start":4,"end":18,"cssClass":"pl-smi"},{"start":19,"end":21,"cssClass":"pl-k"},{"start":22,"end":36,"cssClass":"pl-smi"},{"start":38,"end":52,"cssClass":"pl-smi"},{"start":52,"end":53,"cssClass":"pl-k"},{"start":53,"end":73,"cssClass":"pl-smi"},{"start":74,"end":76,"cssClass":"pl-k"},{"start":77,"end":87,"cssClass":"pl-s"},{"start":77,"end":78,"cssClass":"pl-pds"},{"start":86,"end":87,"cssClass":"pl-pds"}],[],[{"start":4,"end":26,"cssClass":"pl-c"},{"start":4,"end":5,"cssClass":"pl-c"}],[{"start":4,"end":18,"cssClass":"pl-smi"},{"start":19,"end":21,"cssClass":"pl-k"},{"start":22,"end":36,"cssClass":"pl-smi"},{"start":38,"end":52,"cssClass":"pl-smi"},{"start":52,"end":53,"cssClass":"pl-k"},{"start":53,"end":65,"cssClass":"pl-smi"},{"start":66,"end":70,"cssClass":"pl-k"},{"start":71,"end":77,"cssClass":"pl-smi"}],[],[],[],[{"start":0,"end":68,"cssClass":"pl-c"},{"start":0,"end":1,"cssClass":"pl-c"}],[],[{"start":0,"end":33,"cssClass":"pl-c"},{"start":0,"end":1,"cssClass":"pl-c"}],[],[{"start":4,"end":33,"cssClass":"pl-c"},{"start":4,"end":5,"cssClass":"pl-c"}],[{"start":0,"end":2,"cssClass":"pl-c"},{"start":0,"end":1,"cssClass":"pl-c"}],[{"start":0,"end":58,"cssClass":"pl-c"},{"start":0,"end":1,"cssClass":"pl-c"}],[{"start":0,"end":69,"cssClass":"pl-c"},{"start":0,"end":1,"cssClass":"pl-c"}],[{"start":0,"end":52,"cssClass":"pl-c"},{"start":0,"end":1,"cssClass":"pl-c"}],[{"start":0,"end":48,"cssClass":"pl-c"},{"start":0,"end":1,"cssClass":"pl-c"}],[{"start":0,"end":6,"cssClass":"pl-c"},{"start":0,"end":1,"cssClass":"pl-c"}],[{"start":0,"end":38,"cssClass":"pl-c"},{"start":0,"end":1,"cssClass":"pl-c"}],[{"start":0,"end":6,"cssClass":"pl-c"},{"start":0,"end":1,"cssClass":"pl-c"}],[{"start":0,"end":28,"cssClass":"pl-c"},{"start":0,"end":1,"cssClass":"pl-c"}],[{"start":0,"end":6,"cssClass":"pl-c"},{"start":0,"end":1,"cssClass":"pl-c"}],[{"start":0,"end":62,"cssClass":"pl-c"},{"start":0,"end":1,"cssClass":"pl-c"}],[{"start":0,"end":61,"cssClass":"pl-c"},{"start":0,"end":1,"cssClass":"pl-c"}],[{"start":0,"end":60,"cssClass":"pl-c"},{"start":0,"end":1,"cssClass":"pl-c"}],[{"start":0,"end":54,"cssClass":"pl-c"},{"start":0,"end":1,"cssClass":"pl-c"}],[{"start":0,"end":6,"cssClass":"pl-c"},{"start":0,"end":1,"cssClass":"pl-c"}],[{"start":0,"end":2,"cssClass":"pl-c"},{"start":0,"end":1,"cssClass":"pl-c"}],[{"start":0,"end":38,"cssClass":"pl-c"},{"start":0,"end":1,"cssClass":"pl-c"}],[{"start":0,"end":6,"cssClass":"pl-c"},{"start":0,"end":1,"cssClass":"pl-c"}],[{"start":0,"end":24,"cssClass":"pl-c"},{"start":0,"end":1,"cssClass":"pl-c"}],[],[{"start":0,"end":25,"cssClass":"pl-c"},{"start":0,"end":1,"cssClass":"pl-c"}],[],[{"start":0,"end":32,"cssClass":"pl-c"},{"start":0,"end":1,"cssClass":"pl-c"}],[],[{"start":11,"end":25,"cssClass":"pl-smi"},{"start":31,"end":32,"cssClass":"pl-v"},{"start":33,"end":34,"cssClass":"pl-k"},{"start":35,"end":44,"cssClass":"pl-smi"},{"start":46,"end":47,"cssClass":"pl-v"},{"start":48,"end":49,"cssClass":"pl-k"},{"start":50,"end":70,"cssClass":"pl-smi"},{"start":73,"end":74,"cssClass":"pl-k"}],[],[{"start":4,"end":37,"cssClass":"pl-c"},{"start":4,"end":5,"cssClass":"pl-c"}],[],[{"start":4,"end":31,"cssClass":"pl-c"},{"start":4,"end":5,"cssClass":"pl-c"}],[{"start":4,"end":18,"cssClass":"pl-smi"},{"start":19,"end":33,"cssClass":"pl-smi"},{"start":33,"end":34,"cssClass":"pl-k"},{"start":34,"end":54,"cssClass":"pl-smi"},{"start":55,"end":56,"cssClass":"pl-k"},{"start":57,"end":61,"cssClass":"pl-c1"}],[{"start":4,"end":110,"cssClass":"pl-c"},{"start":4,"end":5,"cssClass":"pl-c"}],[],[{"start":0,"end":32,"cssClass":"pl-c"},{"start":0,"end":1,"cssClass":"pl-c"}],[],[{"start":11,"end":25,"cssClass":"pl-smi"},{"start":31,"end":32,"cssClass":"pl-v"},{"start":33,"end":34,"cssClass":"pl-k"},{"start":35,"end":41,"cssClass":"pl-smi"},{"start":43,"end":44,"cssClass":"pl-v"},{"start":45,"end":46,"cssClass":"pl-k"},{"start":47,"end":61,"cssClass":"pl-smi"},{"start":64,"end":65,"cssClass":"pl-k"}],[],[],[],[],[{"start":0,"end":64,"cssClass":"pl-c"},{"start":0,"end":1,"cssClass":"pl-c"}],[],[{"start":0,"end":54,"cssClass":"pl-c"},{"start":0,"end":1,"cssClass":"pl-c"}],[],[{"start":0,"end":58,"cssClass":"pl-c"},{"start":0,"end":1,"cssClass":"pl-c"}],[],[{"start":8,"end":22,"cssClass":"pl-smi"},{"start":22,"end":23,"cssClass":"pl-k"},{"start":23,"end":43,"cssClass":"pl-smi"}],[{"start":8,"end":22,"cssClass":"pl-smi"},{"start":22,"end":23,"cssClass":"pl-k"},{"start":23,"end":48,"cssClass":"pl-smi"}],[{"start":8,"end":12,"cssClass":"pl-v"},{"start":13,"end":14,"cssClass":"pl-k"},{"start":17,"end":18,"cssClass":"pl-c1"},{"start":20,"end":23,"cssClass":"pl-smi"}],[{"start":8,"end":12,"cssClass":"pl-v"},{"start":13,"end":14,"cssClass":"pl-k"},{"start":17,"end":18,"cssClass":"pl-c1"},{"start":20,"end":22,"cssClass":"pl-c1"}],[],[{"start":11,"end":12,"cssClass":"pl-v"},{"start":13,"end":14,"cssClass":"pl-k"},{"start":15,"end":31,"cssClass":"pl-smi"},{"start":33,"end":36,"cssClass":"pl-v"},{"start":37,"end":38,"cssClass":"pl-k"},{"start":39,"end":44,"cssClass":"pl-s"},{"start":39,"end":40,"cssClass":"pl-pds"},{"start":43,"end":44,"cssClass":"pl-pds"}],[],[{"start":10,"end":52,"cssClass":"pl-s"},{"start":10,"end":11,"cssClass":"pl-pds"},{"start":51,"end":52,"cssClass":"pl-pds"}],[{"start":16,"end":30,"cssClass":"pl-smi"},{"start":30,"end":31,"cssClass":"pl-k"},{"start":31,"end":51,"cssClass":"pl-smi"},{"start":52,"end":53,"cssClass":"pl-k"},{"start":54,"end":70,"cssClass":"pl-smi"}],[],[{"start":4,"end":18,"cssClass":"pl-smi"},{"start":19,"end":21,"cssClass":"pl-k"},{"start":22,"end":36,"cssClass":"pl-smi"},{"start":38,"end":52,"cssClass":"pl-smi"},{"start":52,"end":53,"cssClass":"pl-k"},{"start":53,"end":73,"cssClass":"pl-smi"},{"start":74,"end":75,"cssClass":"pl-k"},{"start":75,"end":76,"cssClass":"pl-k"},{"start":77,"end":93,"cssClass":"pl-smi"}],[],[],[{"start":0,"end":70,"cssClass":"pl-c"},{"start":0,"end":1,"cssClass":"pl-c"}],[],[{"start":4,"end":59,"cssClass":"pl-c"},{"start":4,"end":5,"cssClass":"pl-c"}],[],[{"start":4,"end":20,"cssClass":"pl-smi"},{"start":21,"end":23,"cssClass":"pl-k"},{"start":35,"end":49,"cssClass":"pl-smi"},{"start":51,"end":63,"cssClass":"pl-v"},{"start":64,"end":65,"cssClass":"pl-k"},{"start":66,"end":77,"cssClass":"pl-s"},{"start":66,"end":67,"cssClass":"pl-pds"},{"start":76,"end":77,"cssClass":"pl-pds"}],[{"start":34,"end":43,"cssClass":"pl-v"},{"start":44,"end":45,"cssClass":"pl-k"},{"start":46,"end":54,"cssClass":"pl-s"},{"start":46,"end":47,"cssClass":"pl-pds"},{"start":53,"end":54,"cssClass":"pl-pds"},{"start":56,"end":65,"cssClass":"pl-v"},{"start":66,"end":67,"cssClass":"pl-k"},{"start":68,"end":90,"cssClass":"pl-s"},{"start":68,"end":69,"cssClass":"pl-pds"},{"start":89,"end":90,"cssClass":"pl-pds"}],[],[{"start":17,"end":33,"cssClass":"pl-smi"},{"start":36,"end":42,"cssClass":"pl-v"},{"start":43,"end":44,"cssClass":"pl-k"},{"start":45,"end":47,"cssClass":"pl-c1"}],[],[{"start":4,"end":65,"cssClass":"pl-c"},{"start":4,"end":5,"cssClass":"pl-c"}],[],[{"start":4,"end":20,"cssClass":"pl-smi"},{"start":21,"end":23,"cssClass":"pl-k"},{"start":24,"end":38,"cssClass":"pl-smi"},{"start":40,"end":41,"cssClass":"pl-k"}],[{"start":8,"end":13,"cssClass":"pl-e"},{"start":13,"end":15,"cssClass":"pl-k"},{"start":22,"end":28,"cssClass":"pl-smi"},{"start":30,"end":39,"cssClass":"pl-smi"},{"start":41,"end":61,"cssClass":"pl-smi"},{"start":64,"end":65,"cssClass":"pl-k"}],[{"start":17,"end":23,"cssClass":"pl-smi"},{"start":25,"end":34,"cssClass":"pl-smi"},{"start":37,"end":38,"cssClass":"pl-k"}],[{"start":18,"end":27,"cssClass":"pl-v"},{"start":28,"end":29,"cssClass":"pl-k"},{"start":34,"end":54,"cssClass":"pl-smi"}],[],[{"start":4,"end":24,"cssClass":"pl-smi"},{"start":25,"end":27,"cssClass":"pl-k"},{"start":39,"end":55,"cssClass":"pl-smi"},{"start":57,"end":69,"cssClass":"pl-v"},{"start":70,"end":71,"cssClass":"pl-k"},{"start":72,"end":83,"cssClass":"pl-s"},{"start":72,"end":73,"cssClass":"pl-pds"},{"start":82,"end":83,"cssClass":"pl-pds"}],[{"start":38,"end":47,"cssClass":"pl-v"},{"start":48,"end":49,"cssClass":"pl-k"},{"start":50,"end":58,"cssClass":"pl-s"},{"start":50,"end":51,"cssClass":"pl-pds"},{"start":57,"end":58,"cssClass":"pl-pds"},{"start":60,"end":69,"cssClass":"pl-v"},{"start":70,"end":71,"cssClass":"pl-k"},{"start":72,"end":83,"cssClass":"pl-s"},{"start":72,"end":73,"cssClass":"pl-pds"},{"start":82,"end":83,"cssClass":"pl-pds"}],[],[{"start":4,"end":40,"cssClass":"pl-c"},{"start":4,"end":5,"cssClass":"pl-c"}],[{"start":17,"end":37,"cssClass":"pl-smi"},{"start":38,"end":39,"cssClass":"pl-k"},{"start":47,"end":63,"cssClass":"pl-smi"},{"start":66,"end":68,"cssClass":"pl-k"},{"start":69,"end":70,"cssClass":"pl-c1"}],[],[],[{"start":4,"end":78,"cssClass":"pl-c"},{"start":4,"end":5,"cssClass":"pl-c"}],[{"start":4,"end":78,"cssClass":"pl-c"},{"start":4,"end":5,"cssClass":"pl-c"}],[{"start":4,"end":38,"cssClass":"pl-c"},{"start":4,"end":5,"cssClass":"pl-c"}],[],[{"start":4,"end":16,"cssClass":"pl-smi"},{"start":17,"end":19,"cssClass":"pl-k"},{"start":20,"end":34,"cssClass":"pl-smi"},{"start":36,"end":37,"cssClass":"pl-k"}],[{"start":8,"end":13,"cssClass":"pl-e"},{"start":13,"end":15,"cssClass":"pl-k"},{"start":22,"end":45,"cssClass":"pl-smi"},{"start":47,"end":56,"cssClass":"pl-smi"},{"start":58,"end":78,"cssClass":"pl-smi"},{"start":81,"end":82,"cssClass":"pl-k"}],[{"start":17,"end":40,"cssClass":"pl-smi"},{"start":42,"end":51,"cssClass":"pl-smi"},{"start":54,"end":55,"cssClass":"pl-k"}],[{"start":18,"end":27,"cssClass":"pl-v"},{"start":28,"end":29,"cssClass":"pl-k"},{"start":34,"end":54,"cssClass":"pl-smi"}],[],[{"start":4,"end":22,"cssClass":"pl-smi"},{"start":23,"end":25,"cssClass":"pl-k"},{"start":37,"end":49,"cssClass":"pl-smi"},{"start":51,"end":63,"cssClass":"pl-v"},{"start":64,"end":65,"cssClass":"pl-k"},{"start":66,"end":77,"cssClass":"pl-s"},{"start":66,"end":67,"cssClass":"pl-pds"},{"start":76,"end":77,"cssClass":"pl-pds"}],[{"start":39,"end":48,"cssClass":"pl-v"},{"start":49,"end":50,"cssClass":"pl-k"},{"start":51,"end":76,"cssClass":"pl-s"},{"start":51,"end":52,"cssClass":"pl-pds"},{"start":75,"end":76,"cssClass":"pl-pds"},{"start":78,"end":87,"cssClass":"pl-v"},{"start":88,"end":89,"cssClass":"pl-k"},{"start":90,"end":101,"cssClass":"pl-s"},{"start":90,"end":91,"cssClass":"pl-pds"},{"start":100,"end":101,"cssClass":"pl-pds"}],[],[{"start":4,"end":40,"cssClass":"pl-c"},{"start":4,"end":5,"cssClass":"pl-c"}],[{"start":17,"end":35,"cssClass":"pl-smi"},{"start":36,"end":37,"cssClass":"pl-k"},{"start":45,"end":61,"cssClass":"pl-smi"},{"start":64,"end":66,"cssClass":"pl-k"},{"start":67,"end":68,"cssClass":"pl-c1"}],[],[]],"csv":null,"csvError":null,"dependabotInfo":{"showConfigurationBanner":false,"configFilePath":null,"networkDependabotPath":"/sig-gis/TerraBio/network/updates","dismissConfigurationNoticePath":"/settings/dismiss-notice/dependabot_configuration_notice","configurationNoticeDismissed":null},"displayName":"reforesterra_2023_data_processing.R","displayUrl":"https://github.com/sig-gis/TerraBio/blob/main/Reforesterra/YR1_2023/reforesterra_2023_data_processing.R?raw=true","headerInfo":{"blobSize":"8.84 KB","deleteTooltip":"You must be signed in to make or propose changes","editTooltip":"You must be signed in to make or propose changes","ghDesktopPath":"https://desktop.github.com","isGitLfs":false,"onBranch":true,"shortPath":"b0a1c72","siteNavLoginPath":"/login?return_to=https%3A%2F%2Fgithub.com%2Fsig-gis%2FTerraBio%2Fblob%2Fmain%2FReforesterra%2FYR1_2023%2Freforesterra_2023_data_processing.R","isCSV":false,"isRichtext":false,"toc":null,"lineInfo":{"truncatedLoc":"246","truncatedSloc":"168"},"mode":"file"},"image":false,"isCodeownersFile":null,"isPlain":false,"isValidLegacyIssueTemplate":false,"issueTemplate":null,"discussionTemplate":null,"language":"R","languageID":307,"large":false,"planSupportInfo":{"repoIsFork":null,"repoOwnedByCurrentUser":null,"requestFullPath":"/sig-gis/TerraBio/blob/main/Reforesterra/YR1_2023/reforesterra_2023_data_processing.R","showFreeOrgGatedFeatureMessage":null,"showPlanSupportBanner":null,"upgradeDataAttributes":null,"upgradePath":null},"publishBannersInfo":{"dismissActionNoticePath":"/settings/dismiss-notice/publish_action_from_dockerfile","releasePath":"/sig-gis/TerraBio/releases/new?marketplace=true","showPublishActionBanner":false},"rawBlobUrl":"https://github.com/sig-gis/TerraBio/raw/main/Reforesterra/YR1_2023/reforesterra_2023_data_processing.R","renderImageOrRaw":false,"richText":null,"renderedFileInfo":null,"shortPath":null,"symbolsEnabled":true,"tabSize":8,"topBannersInfo":{"overridingGlobalFundingFile":false,"globalPreferredFundingPath":null,"showInvalidCitationWarning":false,"citationHelpUrl":"https://docs.github.com/github/creating-cloning-and-archiving-repositories/creating-a-repository-on-github/about-citation-files","actionsOnboardingTip":null},"truncated":false,"viewable":true,"workflowRedirectUrl":null,"symbols":{"timed_out":false,"not_analyzed":true,"symbols":[]}},"copilotInfo":null,"copilotAccessAllowed":false,"csrf_tokens":{"/sig-gis/TerraBio/branches":{"post":"P8Y7aiOR8h4-Zjq6PyDOQYVI8zD-XdZM3QYpMe7UJLstpS-r99ZIBFO1vZOdAK0QNpoT6Y4weuWIW5XQIRpZkQ"},"/repos/preferences":{"post":"BGHsosVY4mcC4UMmn4MIpkyQyOpVTDBneLd5qBWWFeVYm2GctPEkrnAwfY-qDQ6QtCylhLHCLFMAOoqTkcqn4Q"}}},"title":"TerraBio/Reforesterra/YR1_2023/reforesterra_2023_data_processing.R at main · sig-gis/TerraBio"}
+# This analysis is based on soil samples collected at Reforesterra and processed
+# by EcoMol. There are three main land uses: CF = counter factual, R =
+# control/forest, I = intervention; and some variants: CF2 = riparian
+# counterfatual, IA and IB + ??.  The 2023 analysis is the first year.
+
+# This file take the eDNA species table provided by EcoMol and prepares them for
+# analysis.
+
+# Code written Dec. 2023 by Karen Dyson
+
+# to do list:
+#   + need to look at which ASVs should be combined or not...
+#   + check high ASV loss. Degenerate primers.
+#   + add diagnostics/plotting
+#   + add diagnostics for what ASVs are lost
+
+
+## ----- Data ingestion ---------------------------------------
+
+# libraries
+library(ggplot2)
+library(gridExtra)
+library(tidyr)
+library(vegan)
+library(stringr)
+library(dplyr)
+
+# Ingest codes
+source("../../../../RCode/R_Scripts/triplet_fixer.R")
+source("functions.R")
+
+# script variable definitions
+minlibrarySize = 5000
+minRelativeAbund = 0.05
+minAbsoluteAbund = 5
+
+#Reitmeier, S., Hitch, T.C., Treichel, N., Fikas, N., Hausmann, B., Ramer-Tait,
+#A.E., Neuhaus, K., Berry, D., Haller, D., Lagkouvardos, I. and Clavel, T.,
+#2021. Handling of spurious sequences affects the outcome of high-throughput 16S
+#rRNA gene amplicon profiling. ISME Communications, 1(1), pp.1-12.
+
+phylum = c("Arthropoda") 
+#phylum = c("Annelida", "Nematoda", "Platyhelminthes", "Arthropoda", "Mollusca") #worms and insects
+
+
+
+## Ingest 2023 data.
+
+## common data
+lookupColnames <- read.csv("lookupColnames.csv")
+lookupSitenames2023 <- read.csv("Reforesterra/YR1_2023/lookupSitename2023.csv", strip.white = T)
+
+# remove Tbio-RTERRA-5-CF-R2 from sitenames because it failed and is not in the ASV data.
+lookupSitenames2023 <- lookupSitenames2023[lookupSitenames2023$sample.code != "Tbio-RTERRA-5-CF-R2",]
+
+
+infoColnames2023 <- c("N", "sampleID", "siteType", "labVolume",
+                      "amplificationSuccess", "replicate",
+                      "EcoMolID", "concentrationDNA_nguL",
+                      "purityDNA")
+
+
+
+# 2023 eDNA data import
+        temp <- lookupColnames[order(lookupColnames$EM_OrderRTerra2023), ] 
+        temp <- temp$TB_ColName[which(!is.na(temp$EM_ColNameRTerra2023) & !is.na(temp$EM_OrderRTerra2023))]
+
+    rterra2023Raw <- read.csv("Reforesterra/YR1_2023/Reforesterra-Complete_analysis_results-2023-10-25.csv",
+                             stringsAsFactors = F,
+                             col.names = temp)
+    
+    
+    ## WAITING ON THIS INFORMATION
+    # horta2023Info <- read.csv("Horta/Yr2_2023/HortaSamples2023.csv",
+    #                           stringsAsFactors = F,
+    #                           col.names = infoColnames2023,
+    #                           header = T)
+    # 
+    # 
+    # ecoMolRawSummary(horta2022Raw)
+    # ecoMolRawSummary(horta2023Raw)
+    # 
+    # horta2023Raw %>%
+    #     group_by(identificationMaxTaxon) %>%
+    #     summarise(asvAbsoluteAbundance)
+    
+    
+    
+## ----- Data cleaning and setup | 2023 -------------------------------
+
+# Remove the ASVHeader ">" character
+    rterra2023Raw$ASVHeader <- str_sub(rterra2023Raw$ASVHeader, 2, -1)
+
+# Remove columns we don't need for analysis.
+head(rterra2023Raw)
+rterra2023Filt <- rterra2023Raw[ , lookupColnames$TB_ColName[which(!is.na(lookupColnames$EM_ColNameRTerra2023) &
+                                                                    lookupColnames$Keep == "Y")]]
+head(rterra2023Filt)
+
+# Remove the controls in the filtered data
+rterra2023Filt <- rterra2023Filt[!(rterra2023Filt$sample == "EM135c3-Neg"), ]
+
+# Look at phylum in the raw data
+table(rterra2023Filt$phylumBLASTn)
+
+ggplot(rterra2023Filt, aes(x = phylumBLASTn)) + 
+    geom_bar() + coord_flip()
+
+
+
+# Create a group columns (first should be lc-site-replicates, second is lc-site, third is prettified lc only)
+
+# For Reforesterra in 2023, metadata_2 is the site number, _3 through _5 are different codes for the lc, and _7 is the replicate. Can do this either by using the lookup table (merge + paste) or str_sub/str_replace_all. The challenge is that they have intervention A and B for one of the sites. There are also two types of counterfactual.
+
+
+
+rterra2023Filt <- merge(rterra2023Filt,
+                        lookupSitenames2023[ , 2:10],
+                        by.x = "sample", by.y = "sample.code")
+
+# lc-site-replicates and lc-site; lc only handled by "treatment"
+rterra2023Filt <- rterra2023Filt %>%
+    mutate(LCSiteRep = paste0(treatment.code.original, "-S", site.code, "-R", replicate),
+           LCSite    = paste0(treatment.code.original, "-S", site.code))
+
+
+# Clean the data based on our quality variables
+    # Remove sites not meeting minimum library size
+    print(unique(rterra2023Filt$sampleTotalAbd))
+    #rterra2023Filt %>% dplyr::select(sample, sampleTotalAbd) %>% unique()
+    removedSites <- unique(rterra2023Filt$sample[rterra2023Filt$sampleTotalAbd <= minlibrarySize])
+    rterra2023Filt <- rterra2023Filt[ !(rterra2023Filt$sample %in% removedSites) , ]
+    stopifnot(length(unique(rterra2023Filt$sample[rterra2023Filt$sampleTotalAbd <= minlibrarySize])) == 0)
+
+    print(removedSites)
+
+    # Remove ASVs not meeting primer expected length
+    rterra2023Filt <- rterra2023Filt[ rterra2023Filt$primerExpectedLength == "in range", ]
+    
+    # Filter on the phylum
+    rterra2023Filt <- rterra2023Filt[ rterra2023Filt$phylumBLASTn %in% phylum, ]
+    
+  
+
+# ----- * Data quality checks | 2023 -------------------------------
+
+# Examine 2023 DNA concentration.
+    
+    # Waiting on data from EcoMOL
+# 
+# p0 <- ggplot(subset(horta2022Info, storage == "Silica"),
+#              aes(x = volumeSampleID, y = concentrationDNA_nguL)) + 
+#     geom_boxplot() + geom_point(color = "green") +
+#     ylim(5,80) + xlab("LC type (silica 2022)")
+#     
+#     grid.arrange(p0, p1, p2, nrow=2)
+#     
+# # Examine 2023 DNA purity.
+#     
+#     p1 <- ggplot(subset(horta2022Info, storage == "Buffer"),
+#                  aes(x = volumeSampleID, y = purityDNA)) + 
+#         geom_boxplot() + geom_point(color = "darkgreen") +
+#         ylim(1.45,2) + xlab("LC type (buffer 2022)")
+#     
+# 
+#     grid.arrange(p0, p1, ncol=2)    
+#     
+#     remove(p0, p1, p2)
+    
+# add analysis notes here
+    
+# Look at ASV absolute abundance
+
+    ggplot(rterra2023Filt, aes(x = treatment, y = asvAbsoluteAbundance)) + 
+        geom_boxplot() 
+    # if needed, repeat for Raw data.
+
+    #what are the v. high ASVs?
+    rterra2023Filt[rterra2023Filt$asvAbsoluteAbundance > 5000, ]
+    # One Coleoptera (possibly lesser mealworm Alphitobius diaperinus or relative) found in Riparian pasture. 
+    
+# look at sample total abundance
+
+    ggplot(rterra2023Filt, aes(x = LCSite, y = sampleTotalAbd)) + 
+        geom_point() 
+    
+
+    
+# ----- Filter for rare species | 2023 -------------------------
+
+# We want to remove rare species that could be errors 
+
+# Remove ASVs below minimum relative abundance on sample. 
+    plot(
+        rterra2023Filt$asvAbsoluteAbundance,
+        rterra2023Filt$relativeAbundanceOnSample,
+        ylim = c(0, .01),
+        xlim = c(0, 50)
+    )
+    abline(v = minAbsoluteAbund, col = "red")
+    
+    print("2023 filt. ASV < min absolute abundance:")
+    print(table(rterra2023Filt$asvAbsoluteAbundance < minAbsoluteAbund))
+    
+    rterra2023Filt <- rterra2023Filt[ rterra2023Filt$asvAbsoluteAbundance >= minAbsoluteAbund, ]
+    
+
+# ----- Create Matrices | 2023 ---------------------------------------
+    
+    # Create a matrix with replicates as individual "sites"
+    
+    rterra2023Matrix <- ez.matrify(rterra2023Filt, species.name = "ASVHeader",
+                                  site.name = "sample", abundance = "asvAbsoluteAbundance")
+    
+    hist(colSums(rterra2023Matrix), breaks = 50)
+    
+    # Create a matrix where the replicates for sites are combined
+    
+    rterra2023LCSite <- rterra2023Filt %>%
+        dplyr::select(LCSite, ASVHeader, asvAbsoluteAbundance) %>%
+        group_by(LCSite, ASVHeader) %>%
+        summarise(abundance = sum(asvAbsoluteAbundance))
+    
+    rterraSite2023Matrix <- ez.matrify(rterra2023LCSite, species.name = "ASVHeader",
+                                      site.name = "LCSite", abundance = "abundance")
+    
+    #test to make sure everything got in
+    any((colSums(rterraSite2023Matrix)-colSums(rterra2023Matrix)) != 0 )
+    
+    
+    # Create a matrix where all land uses across sites are combined. Note that
+    # this may need to change based on what IA and IB actually are... there is
+    # also a problem with different n.
+    
+    rterra2023LC <- rterra2023Filt %>%
+        dplyr::select(treatment.code.original, ASVHeader, asvAbsoluteAbundance) %>%
+        group_by(treatment.code.original, ASVHeader) %>%
+        summarise(abundance = sum(asvAbsoluteAbundance))
+    
+    rterraLC2023Matrix <- ez.matrify(rterra2023LC, species.name = "ASVHeader",
+                                       site.name = "treatment.code.original", abundance = "abundance")
+    
+    #test to make sure everything got in
+    any((colSums(rterraLC2023Matrix)-colSums(rterra2023Matrix)) != 0 )
+    
+    
