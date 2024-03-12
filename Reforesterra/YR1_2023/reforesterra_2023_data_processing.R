@@ -26,8 +26,8 @@ library(stringr)
 library(dplyr)
 
 # Ingest codes
-source("../../../RCode/R_Scripts/triplet_fixer.R")
-source("functions.R")
+source("../../../RCode/KDyson_R_Scripts/triplet_fixer.R")
+source("../../functions.R")
 
 # script variable definitions
 minlibrarySize = 5000
@@ -48,7 +48,7 @@ phylum = c("Arthropoda")
 
 ## common data
 lookupColnames <- read.csv("lookupColnames.csv")
-lookupSitenames2023 <- read.csv("Reforesterra/YR1_2023/lookupSitename2023.csv", strip.white = T)
+lookupSitenames2023 <- read.csv("lookupSitename2023.csv", strip.white = T)
 
 # remove Tbio-RTERRA-5-CF-R2 from sitenames because it failed and is not in the ASV data.
 lookupSitenames2023 <- lookupSitenames2023[lookupSitenames2023$sample.code != "Tbio-RTERRA-5-CF-R2",]
@@ -65,7 +65,7 @@ infoColnames2023 <- c("N", "sampleID", "siteType", "labVolume",
         temp <- lookupColnames[order(lookupColnames$EM_OrderRTerra2023), ] 
         temp <- temp$TB_ColName[which(!is.na(temp$EM_ColNameRTerra2023) & !is.na(temp$EM_OrderRTerra2023))]
 
-    rterra2023Raw <- read.csv("Reforesterra/YR1_2023/Reforesterra-Complete_analysis_results-2023-10-25.csv",
+    rterra2023Raw <- read.csv("Reforesterra-Complete_analysis_results-2023-10-25.csv",
                              stringsAsFactors = F,
                              col.names = temp)
     

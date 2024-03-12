@@ -16,16 +16,16 @@ library(zCompositions)
 library(dplyr)
 
 
-source("allianceBranding.R")
+source("../../allianceBranding.R") # LM 2024-01-11 only for testing locally
 
-source("functions.R")
-source("../../../RCode/R_Scripts/triplet_fixer.R") # from my github repository
-source("../../../RCode/R_Scripts/repeat_multipatt.R") # ditto
+source("../../functions.R") # LM 2024-01-11 ditto
+source("../../../RCode/KDyson_R_Scripts/triplet_fixer.R") # ditto
+source("../../../RCode/KDyson_R_Scripts/repeat_multipatt.R") # ditto
 
-lookupColnames <- read.csv("CafeApui/Y1_2022/lookupColnames.csv")
-lookupSitenames <- read.csv("CafeApui/Y1_2022/lookupSitenames.csv")
+lookupColnames <- read.csv("lookupColnames.csv") # ditto
+lookupSitenames <- read.csv("lookupSitenames.csv") # ditto
 
-apuiAllASV <- read.csv("CafeApui/Y1_2022/Apui_2022_bioinfo_results.csv",
+apuiAllASV <- read.csv("Apui_2022_bioinfo_results.csv",
                         stringsAsFactors = F,
                         col.names = lookupColnames$TB_ColName)
     apuiAllASV$ASVHeader <- str_sub(apuiAllASV$ASVHeader, 2, -1) # strips the > from the ASV header
