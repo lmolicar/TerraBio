@@ -12,12 +12,12 @@ library(zCompositions)
 library(compositions)
 
 # import processed data
-source("CafeApui/YR2_2023/cafeapui_2023_data_processing.R")
+source("../YR2_2023/cafeapui_2023_data_processing.R")
 
 # import functions
-source("allianceBranding.R")
-source("functions.R")
-source("multiyear_functions.R")
+source("../../allianceBranding.R")
+source("../../functions.R")
+source("../../multiyear_functions.R")
 
 
 ## ----- Accumulation curves ----------------------------------
@@ -154,8 +154,11 @@ apuiAlphaFarm2022 %>%
          x = "Site Type") +
     theme(legend.position = "bottom"
     ) +
-    scale_y_continuous(limits = c(0, 1000)) + 
-    scale_color_manual(values = supportingColorPalette) 
+    scale_y_continuous(limits = c(0, 750)) + 
+    scale_color_manual(values = supportingColorPalette)
+
+ggsave("../YR1_2022/IMAGES/Apui_2022_ESR.png", width = 4.5,
+       height = 5, dpi = 300)
 
 # 2023
 apuiAlphaFarm2023 %>%
@@ -172,10 +175,11 @@ apuiAlphaFarm2023 %>%
          x = "Site Type") +
     theme(legend.position = "bottom"
     ) +
-    scale_y_continuous(limits = c(0, 1000)) + 
+    scale_y_continuous(limits = c(0, 750)) + 
     scale_color_manual(values = supportingColorPalette) 
 
-
+ggsave("../YR2_2023/IMAGES/Apui_2023_ESR.png", width = 4.5,
+       height = 5, dpi = 300)
 
 ## create graphics for ESR
 
@@ -197,10 +201,10 @@ p1 <- apuiAlphaFarm2022 %>%
     scale_y_continuous(limits = c(0, 150)) + 
     scale_color_manual(values = supportingColorPalette) 
 
-ggsave("ApuiESR_2022.pdf",
+ggsave("ApuiESR_2022.png",
        plot = p1,
-       device = "pdf",
-       path = "OutputImages/",
+       device = "png",
+       path = "../YR1_2022/IMAGES",
        width = 8,
        height = 5,
        units = "in",
@@ -225,10 +229,10 @@ p2 <- apuiAlphaFarm2023 %>%
     scale_y_continuous(limits = c(0, 150)) + 
     scale_color_manual(values = supportingColorPalette) 
 
-ggsave("ApuiESR_2023.pdf",
+ggsave("ApuiESR_2023.png",
        plot = p2,
-       device = "pdf",
-       path = "OutputImages/",
+       device = "png",
+       path = "../YR2_2023/IMAGES",
        width = 8,
        height = 5,
        units = "in",
@@ -238,10 +242,29 @@ ggsave("ApuiESR_2023.pdf",
 grid.arrange(p1,p2,
              nrow = 1)
 
-ggsave("ApuiESR_22_23.pdf",
+
+#*******************************************************************************
+#* The code above did not work for me. It did not produce the figure with the
+#* two plots. The idea below came from:
+#* Teutonico, D (2015), ggplot2 Essentials, Packt Publishing Ltd., pg 179
+#*  
+png("../YR2_2023/IMAGES/ApuiESR_22_23.png",
+    width = 8, height = 5, units = "in", res = 300)
+pushViewport(viewport(layout =grid.layout(1,2)))
+print(p1, vp = viewport(layout.pos.row = 1, layout.pos.col = 1))
+print(p2, vp = viewport(layout.pos.row = 1, layout.pos.col = 2))
+dev.off()
+#*******************************************************************************
+
+
+
+ggsave("../YR2_2023/IMAGES/ApuiESR_22_23.png",
+       width = 8, height = 5, dpi = 300)
+
+ggsave("../YR2_2023/IMAGES/ApuiESR_22_23.pdf",
        plot = last_plot(),
        device = "pdf",
-       path = "OutputImages/",
+       path = ".",
        width = 8,
        height = 5,
        units = "in",
@@ -340,12 +363,13 @@ max(aitchisonSample2023)
 ## create plots
 p1 <-
     aitchisonLU2022 %>% aitHeatmap(fillColor1 = supportingColorPalette[2],
-                                   fillColor2 = corporateColorPalette[4])
+                                   fillColor2 = corporateColorPalette[4]) +
+  labs(title = "Year 2022")
 ggsave(
     "ApuiDistHeatmap_2022.pdf",
     plot = p1,
     device = "pdf",
-    path = "OutputImages/",
+    path = "../YR1_2022/IMAGES/",
     width = 8,
     height = 6,
     units = "in",
@@ -354,27 +378,41 @@ ggsave(
 
 
 p2 <- aitchisonLU2023 %>% aitHeatmap(fillColor1 = supportingColorPalette[2],
-                                       fillColor2 = corporateColorPalette[4]) 
+                                       fillColor2 = corporateColorPalette[4]) +
+  labs(title = "Year 2023")
 ggsave("ApuiDistHeatmap_2023.pdf",
        plot = p2,
        device = "pdf",
-       path = "OutputImages/",
+       path = "../YR2_2023/IMAGES/",
        width = 8,
        height = 6,
        units = "in",
        dpi = 300
 )
 
-grid.arrange(p1, p2, nrow = 1)
-ggsave("ApuiDistHeatmap_22_23.pdf",
-       plot = last_plot(),
-       device = "pdf",
-       path = "OutputImages/",
-       width = 8,
-       height = 6,
-       units = "in",
-       dpi = 300
-)
+#*******************************************************************************
+#* The code above did not work for me. It did not produce the figure with the
+#* two plots. The idea below came from:
+#* Teutonico, D (2015), ggplot2 Essentials, Packt Publishing Ltd., pg 179
+#*  
+png("../YR2_2023/IMAGES/ApuiDistheatmap_22_23.png",
+    width = 8, height = 6, units = "in", res = 300)
+pushViewport(viewport(layout =grid.layout(1,2)))
+print(p1, vp = viewport(layout.pos.row = 1, layout.pos.col = 1))
+print(p2, vp = viewport(layout.pos.row = 1, layout.pos.col = 2))
+dev.off()
+#*******************************************************************************
+
+# grid.arrange(p1, p2, nrow = 1)
+# ggsave("ApuiDistHeatmap_22_23.pdf",
+#        plot = last_plot(),
+#        device = "pdf",
+#        path = "OutputImages/",
+#        width = 8,
+#        height = 6,
+#        units = "in",
+#        dpi = 300
+# )
 remove(p1,p2)
 
 
@@ -405,10 +443,10 @@ ggpubr::ggpar(viz_pcaLCPlots2022,
               subtitle = paste0(phylum, collapse = " "), xlab = F, ylab = F, tickslab = F
 )
 
-ggsave("ApuiPCA_2022.pdf",
+ggsave("ApuiPCA_2022.png",
        plot = last_plot(),
-       device = "pdf",
-       path = "OutputImages/",
+       device = "png",
+       path = "../YR1_2022/IMAGES",
        width = 8,
        height = 5,
        units = "in",
@@ -437,10 +475,10 @@ ggpubr::ggpar(viz_pcaLCPlots2023,
               subtitle = paste0(phylum, collapse = " "), xlab = F, ylab = F, tickslab = F
 )
 
-ggsave("ApuiPCA_2023.pdf",
+ggsave("ApuiPCA_2023.png",
        plot = last_plot(),
-       device = "pdf",
-       path = "OutputImages/",
+       device = "png",
+       path = "../YR2_2023/IMAGES",
        width = 8,
        height = 5,
        units = "in",
@@ -505,10 +543,10 @@ ggpubr::ggpar(viz_pcaPlots,
 
 
 
-ggsave("ApuiPCA_JOINT_22_23.pdf",
+ggsave("ApuiPCA_JOINT_22_23.png",
        plot = last_plot(),
-       device = "pdf",
-       path = "OutputImages/",
+       device = "png",
+       path = "../YR2_2023/IMAGES",
        width = 8,
        height = 5,
        units = "in",

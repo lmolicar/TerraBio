@@ -22,10 +22,10 @@ source("../../functions.R") # LM 2024-01-11 ditto
 source("../../../RCode/KDyson_R_Scripts/triplet_fixer.R") # ditto
 source("../../../RCode/KDyson_R_Scripts/repeat_multipatt.R") # ditto
 
-lookupColnames <- read.csv("lookupColnames.csv") # ditto
-lookupSitenames <- read.csv("lookupSitenames.csv") # ditto
+lookupColnames <- read.csv("Archive/lookupColnames2022.csv") # ditto
+lookupSitenames <- read.csv("lookupSitenames2022.csv") # ditto
 
-apuiAllASV <- read.csv("Apui_2022_bioinfo_results.csv",
+apuiAllASV <- read.csv("../../CafeApui/Y1_2022/Apui_2022_bioinfo_results.csv",
                         stringsAsFactors = F,
                         col.names = lookupColnames$TB_ColName)
     apuiAllASV$ASVHeader <- str_sub(apuiAllASV$ASVHeader, 2, -1) # strips the > from the ASV header
@@ -113,9 +113,9 @@ apuiAllASV <- apuiAllASV[ apuiAllASV$asvAbsoluteAbundance > minAbsoluteAbund, ]
 apuiAllASV <- merge(apuiAllASV, lookupSitenames, by.x = "sample", by.y = "EM_Sample")
 
 # Now we need to split out the comparison samples and the silica only samples (main analysis).
-apuiPairedASV <- apuiAllASV [ apuiAllASV$Paired == "Y" ,  ]
-apuiASV <- apuiAllASV[ apuiAllASV$Storage == "Silica" , ]
-apuiBufferASV <- apuiAllASV[ apuiAllASV$Storage == "Buffer" ,]
+apuiPairedASV <- apuiAllASV [ apuiAllASV$paired == "Y" ,  ]
+apuiASV <- apuiAllASV[ apuiAllASV$storage == "Silica" , ]
+apuiBufferASV <- apuiAllASV[ apuiAllASV$storage == "Buffer" ,]
 
 # Now create Site Species matrices for each.
 apuiPairedMatrix <- ez.matrify(apuiPairedASV, species.name = "ASVHeader", site.name = "sampleID", abundance = "asvAbsoluteAbundance")

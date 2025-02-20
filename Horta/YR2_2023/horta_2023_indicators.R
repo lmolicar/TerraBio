@@ -25,13 +25,13 @@ library(zCompositions)
 library(iNEXT)
 
 # Ingest codes
-source("allianceBranding.R")
-source("functions.R")
-source("multiyear_functions.R")
-source("../../../RCode/R_Scripts/triplet_fixer.R") # From my github repository
-source("../../../RCode/R_Scripts/repeat_multipatt.R") # ditto
+source("../../allianceBranding.R")
+source("../../functions.R")
+source("../../multiyear_functions.R")
+source("../../../RCode/KDyson_R_Scripts/triplet_fixer.R") # From my github repository
+source("../../../RCode/KDyson_R_Scripts/repeat_multipatt.R") # ditto
 
-source("Horta/Yr2_2023/horta_2023_data_processing.R")
+source("../YR2_2023/horta_2023_data_processing.R")
 
 hortaGroups2022 <- c(rep("Counterfactual", 3), rep("Forest", 3),
                      rep("Restoration", 2), rep("Syntropic", 3))

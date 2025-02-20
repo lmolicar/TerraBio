@@ -6,21 +6,21 @@
 
 ## ----- Data ingestion ---------------------------------------
 
-lookupColnames <- read.csv("Horta/lookupColnames.csv")
-lookupSitenames <- read.csv("Horta/lookupSitename.csv")
+lookupColnames <- read.csv("D:/OneDrive - CGIAR/Documents/CALPSE/Terrabio/BIODIVERSITY/UNDERSTANDING_KAREN_CODE/Horta/lookupColnames.csv")
+lookupSitenames <- read.csv("D:/OneDrive - CGIAR/Documents/CALPSE/Terrabio/BIODIVERSITY/UNDERSTANDING_KAREN_CODE/Horta/lookupColnames.csv")
 
 infoColnames <- c("N", "storage", "volumeSampleID",
                   "replicate", "replicateVolume",
                   "EcoMolID", "concentrationDNA_nguL",
                   "purityDNA")
 
-hortaAllASV <- read.csv("Horta/Horta_2022_bioinfo_results.csv",
+hortaAllASV <- read.csv("Horta_2022_bioinfo_results.csv",
                         stringsAsFactors = F,
                         col.names = lookupColnames$TB_ColName)
-volumeInfo <- read.csv("Horta/VolumeTest.csv",
+volumeInfo <- read.csv("VolumeTest2022.csv",
                        stringsAsFactors = F,
                        col.names = infoColnames)
-hortaInfo <- read.csv("Horta/HortaSamples.csv",
+hortaInfo <- read.csv("HortaSamples2022.csv",
                       stringsAsFactors = F,
                       col.names = infoColnames, header = T)
 
@@ -39,10 +39,10 @@ library(zCompositions)
 library(dplyr)
 
 
-source("allianceBranding.R")
+source("../../allianceBranding.R")
 
-source("functions.R")
-source("../../../RCode/R_Scripts/triplet_fixer.R")
+source("../../functions.R")
+source("../../../RCode/KDyson_R_Scripts/triplet_fixer.R")
 
 # script variable definitions
 minlibrarySize = 5000
@@ -64,9 +64,9 @@ hortaAllASV <- hortaAllASV[ , lookupColnames$Keep == "Y"]
 head(hortaAllASV)
 
 # Remove sites not meeting minimum library size
-# removedSites <- unique(hortaAllASV$sample[hortaAllASV$sampleTotalAbd <= minlibrarySize])
-# hortaAllASV <- hortaAllASV[ !(hortaAllASV$sample %in% removedSites) , ]
-# stopifnot(length(unique(hortaAllASV$sample[hortaAllASV$sampleTotalAbd <= minlibrarySize])) == 0)
+removedSites <- unique(hortaAllASV$sample[hortaAllASV$sampleTotalAbd <= minlibrarySize])
+hortaAllASV <- hortaAllASV[ !(hortaAllASV$sample %in% removedSites) , ]
+stopifnot(length(unique(hortaAllASV$sample[hortaAllASV$sampleTotalAbd <= minlibrarySize])) == 0)
 # 
 # print(removedSites)
 # remove(removedSites)

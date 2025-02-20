@@ -20,8 +20,8 @@ library(compositions)
 library(zCompositions)
 library(iNEXT)
 
-source("functions.R")
-source("../../../RCode/R_Scripts/triplet_fixer.R")
+source("../../functions.R")
+source("../../../RCode/KDyson_R_Scripts/triplet_fixer.R")
 source("horta_2022_data_processing.R")
 
 rare = 50

@@ -26,13 +26,13 @@ library(zCompositions)
 library(iNEXT)
 
 # Ingest codes
-source("allianceBranding.R")
-source("functions.R")
-source("multiyear_functions.R")
-source("../../../RCode/R_Scripts/triplet_fixer.R") # From my github repository
-source("../../../RCode/R_Scripts/repeat_multipatt.R") # ditto
+source("../../allianceBranding.R")
+source("../../functions.R")
+source("../../multiyear_functions.R")
+source("../../../RCode/KDyson_R_Scripts/triplet_fixer.R") # From my github repository
+source("../../../RCode/KDyson_R_Scripts/repeat_multipatt.R") # ditto
 
-source("Reforesterra/YR1_2023/reforesterra_2023_data_processing.R")
+source("reforesterra_2023_data_processing.R")
 
 ## ----- Accumulation curves ----------------------------------
 
@@ -68,59 +68,105 @@ lookupSitenames2023$sample.code[!(lookupSitenames2023$sample.code %in% removedSi
 # Create a table with the alpha diversity measures for each replicate. Note that
 # in 2022 this analysis included rare species.
 
+# rterrAlpha2023 <- alphaMetrics(
+#     rterra2023Matrix,
+#     groupNames = str_split_fixed(rownames(rterra2023Matrix), "-", 5)[, 4],
+#     replNames = str_split_fixed(rownames(rterra2023Matrix), "-", 5)[, 5]
+# ) %>%
+#     mutate(siteType = factor(
+#         siteType,
+#         levels = c("CF", "CF2", "I", "IA", "IB", "R"),
+#         labels = c(
+#             "Counterfactual",
+#             "Riparian CF",
+#             "Intervention",
+#             "Interv. A",
+#             "Interv. B",
+#             "Forest"
+#         )
+#     ))
+
 rterrAlpha2023 <- alphaMetrics(
-    rterra2023Matrix,
-    groupNames = str_split_fixed(rownames(rterra2023Matrix), "-", 5)[, 4],
-    replNames = str_split_fixed(rownames(rterra2023Matrix), "-", 5)[, 5]
+  rterra2023Matrix,
+  groupNames = str_split_fixed(rownames(rterra2023Matrix), "-", 5)[, 4],
+  replNames = str_split_fixed(rownames(rterra2023Matrix), "-", 5)[, 5]
 ) %>%
-    mutate(siteType = factor(
-        siteType,
-        levels = c("CF", "CF2", "I", "IA", "IB", "R"),
-        labels = c(
-            "Counterfactual",
-            "Riparian CF",
-            "Intervention",
-            "Interv. A",
-            "Interv. B",
-            "Forest"
-        )
-    ))
+  mutate(siteType = factor(
+    siteType,
+    levels = c("CF", "CF2", "I", "R"),
+    labels = c(
+      "Counterfactual",
+      "Riparian CF",
+      "Intervention",
+      "Forest"
+    )
+  ))
 
 rterrAlpha2023$siteNumber <- str_split_fixed(rterrAlpha2023$siteNames, "-",5)[,3]
 
     
 
 
+# rterraAlphaGroup2023 <- alphaGroupMetrics(rterraSite2023Matrix,
+#                                           groupNames = str_split_fixed(rownames(rterraSite2023Matrix), "-", 2)[, 1]) %>%
+#     mutate(siteType = factor(
+#         siteType,
+#         levels = c("CF", "CF2", "I", "IA", "IB", "R"),
+#         labels = c(
+#             "Counterfactual",
+#             "Riparian CF",
+#             "Intervention",
+#             "Interv. A",
+#             "Interv. B",
+#             "Forest"
+#         )
+#     ))
+
+
 rterraAlphaGroup2023 <- alphaGroupMetrics(rterraSite2023Matrix,
                                           groupNames = str_split_fixed(rownames(rterraSite2023Matrix), "-", 2)[, 1]) %>%
-    mutate(siteType = factor(
-        siteType,
-        levels = c("CF", "CF2", "I", "IA", "IB", "R"),
-        labels = c(
-            "Counterfactual",
-            "Riparian CF",
-            "Intervention",
-            "Interv. A",
-            "Interv. B",
-            "Forest"
-        )
-    ))
+  mutate(siteType = factor(
+    siteType,
+    levels = c("CF", "CF2", "I", "R"),
+    labels = c(
+      "Counterfactual",
+      "Riparian CF",
+      "Intervention",
+      "Forest"
+    )
+  ))
+
+
+# rterraAlphaGroup2023sqrt <-
+#     alphaGroupMetrics(sqrt(rterraSite2023Matrix),
+#                       groupNames = str_split_fixed(rownames(rterraSite2023Matrix), "-", 2)[, 1]) %>%
+#     mutate(siteType = factor(
+#         siteType,
+#         levels = c("CF", "CF2", "I", "IA", "IB", "R"),
+#         labels = c(
+#             "Counterfactual",
+#             "Riparian CF",
+#             "Intervention",
+#             "Interv. A",
+#             "Interv. B",
+#             "Forest"
+#         )
+#     ))
+
 
 rterraAlphaGroup2023sqrt <-
-    alphaGroupMetrics(sqrt(rterraSite2023Matrix),
-                      groupNames = str_split_fixed(rownames(rterraSite2023Matrix), "-", 2)[, 1]) %>%
-    mutate(siteType = factor(
-        siteType,
-        levels = c("CF", "CF2", "I", "IA", "IB", "R"),
-        labels = c(
-            "Counterfactual",
-            "Riparian CF",
-            "Intervention",
-            "Interv. A",
-            "Interv. B",
-            "Forest"
-        )
-    ))
+  alphaGroupMetrics(sqrt(rterraSite2023Matrix),
+                    groupNames = str_split_fixed(rownames(rterraSite2023Matrix), "-", 2)[, 1]) %>%
+  mutate(siteType = factor(
+    siteType,
+    levels = c("CF", "CF2", "I", "R"),
+    labels = c(
+      "Counterfactual",
+      "Riparian CF",
+      "Intervention",
+      "Forest"
+    )
+  ))
 
 
 
@@ -141,6 +187,9 @@ rterrAlpha2023 %>%
     theme(legend.position="bottom") +
     scale_color_manual(values = supportingColorPalette)
 
+ggsave("IMAGES/IMAGES_KAREN/RTerra_2023_raw-spec-rich.png",
+       width = 6, height=4, dpi=300)
+
 
 rterrAlpha2023 %>%
     ggplot() +
@@ -158,6 +207,9 @@ rterrAlpha2023 %>%
           axis.text.x = element_text(angle = 45, vjust = 1, hjust=1))+
     scale_color_manual(values = supportingColorPalette)
 
+#ggsave("IMAGES/IMAGES_KAREN/RTerra_2023_raw-spec-rich_repl-farm.png", width = 6, height=4, dpi=300)
+ggsave("IMAGES/IMAGES_KAREN_V3/RTerra_2023_raw-spec-rich_repl-farm_v3.png", width = 6, height=4, dpi=300)
+
 # graph for group SR
 rterraAlphaGroup2023 %>% 
     ggplot(
@@ -171,7 +223,8 @@ rterraAlphaGroup2023 %>%
     scale_fill_manual(values = supportingColorPalette) +
     geom_text(stat='identity', aes(label=round(speciesRichness)),position = position_stack(vjust = 0.5))
 
-
+#ggsave("IMAGES/IMAGES_KAREN/RTerra_2023_raw-spec-rich_barplot.png", width = 6, height=4, dpi=300)
+ggsave("IMAGES/IMAGES_KAREN_V3/RTerra_2023_raw-spec-rich_barplot_v3.png", width = 6, height=4, dpi=300)
 
 
 # Graph for ESR
@@ -190,6 +243,9 @@ rterrAlpha2023 %>%
     theme(legend.position="bottom")+
     scale_color_manual(values = supportingColorPalette)
 
+#ggsave("IMAGES/IMAGES_KAREN/RTerra_2023_ESR_repl.png", width = 6, height=4, dpi=300)
+ggsave("IMAGES/IMAGES_KAREN_V3/RTerra_2023_ESR_repl_v3.png", width = 6, height=4, dpi=300)
+
 # graph for group ESR
 rterraAlphaGroup2023 %>% 
     ggplot(
@@ -203,6 +259,9 @@ rterraAlphaGroup2023 %>%
     scale_fill_manual(values = supportingColorPalette) +
     geom_text(stat='identity', aes(label=round(effectiveSR)),position = position_stack(vjust = 0.5))
 
+#ggsave("IMAGES/IMAGES_KAREN/RTerra_2023_ESR_barplot.png", width = 6, height=4, dpi=300)
+ggsave("IMAGES/IMAGES_KAREN_V3/RTerra_2023_ESR_barplot_v3.png", width = 6, height=4, dpi=300)
+
 rterraAlphaGroup2023sqrt %>% 
     ggplot(
         aes(siteType, effectiveSR, fill = siteType)
@@ -215,10 +274,20 @@ rterraAlphaGroup2023sqrt %>%
     scale_fill_manual(values = supportingColorPalette) +
     geom_text(stat='identity', aes(label=round(effectiveSR)),position = position_stack(vjust = 0.5))
 
-ggsave("RterraESR_2023.pdf",
+# ggsave("/RTerra_ESR_2023_sqrt_barplot.png",
+#        plot = last_plot(),
+#        device = "png",
+#        path = "IMAGES/IMAGES_KAREN/",
+#        width = 8,
+#        height = 5,
+#        units = "in",
+#        dpi = 300
+# )
+
+ggsave("RTerra_ESR_2023_sqrt_barplot_v3.png",
        plot = last_plot(),
-       device = "pdf",
-       path = "OutputImages/",
+       device = "png",
+       path = "IMAGES/IMAGES_KAREN_V3/",
        width = 8,
        height = 5,
        units = "in",
@@ -261,19 +330,15 @@ levelOrder = c(
     "CF-CF",
     "CF-CF2",
     "CF-I",
-    "CF-IA",
     "CF-R",
     "CF2-CF2",
     "CF2-I",
-    "CF2-IA",
     "CF2-R",
     "I-I",
-    "I-IA",
     "I-R",
-    "IA-IA",
-    "IA-R",
     "R-R"
 )
+
 aitComparison(
     inputDist = aitchisonReplicate2023,
     remap = lookupSitenames2023[, c(2,10,6)], # remap needs to be old, new, type
@@ -305,31 +370,46 @@ siteHeatmap <-
 
 lookupSitenames2023$treatment.site <- paste0(lookupSitenames2023$treatment.code.original, "-S", lookupSitenames2023$site.code)
 
+# levelOrder = c(
+#     "CF-CF",
+#     "CF-CF2",
+#     "CF-I",
+#     "CF-IA",
+#     "CF-IB",
+#     "CF-R",
+#     "CF2-CF2",
+#     "CF2-I",
+#     "CF2-IA",
+#     "CF2-IB",
+#     "CF2-R",
+#     "I-I",
+#     "I-IA",
+#     "I-IB",
+#     "I-R",
+#     "IA-IB",
+#     "IA-R",
+#     "IB-R",
+#     "R-R"
+# )
+
+
 levelOrder = c(
-    "CF-CF",
-    "CF-CF2",
-    "CF-I",
-    "CF-IA",
-    "CF-IB",
-    "CF-R",
-    "CF2-CF2",
-    "CF2-I",
-    "CF2-IA",
-    "CF2-IB",
-    "CF2-R",
-    "I-I",
-    "I-IA",
-    "I-IB",
-    "I-R",
-    "IA-IB",
-    "IA-R",
-    "IB-R",
-    "R-R"
+  "CF-CF",
+  "CF-CF2",
+  "CF-I",
+  "CF-R",
+  "CF2-CF2",
+  "CF2-I",
+  "CF2-R",
+  "I-I",
+  "I-R",
+  "R-R"
 )
+
 
 aitComparison(
     inputDist = aitchisonSite2023,
-    remap = lookupSitenames2023[, c(11,11,6)], # remap needs to be old, new, type
+    remap = lookupSitenames2023[, c(13,13,6)], # remap needs to be old, new, type
     repeatSamples = TRUE,
     fillColor = c(
         supportingColorPalette[c(1, 5, 2, 6, 7, 3, 8)],
@@ -350,15 +430,21 @@ max(aitchisonLC2023)
 
 ## create plots
 
+# typeHeatmap <-
+#     aitchisonLC2023 %>% aitHeatmap(fillColor1 = supportingColorPalette[2],
+#                                      fillColor2 = corporateColorPalette[4])
+
 typeHeatmap <-
-    aitchisonLC2023 %>% aitHeatmap(fillColor1 = supportingColorPalette[2],
-                                     fillColor2 = corporateColorPalette[4]) 
+  aitchisonLC2023 %>% aitHeatmap(fillColor1 = supportingColorPalette[2],
+                                 fillColor2 = corporateColorPalette[4])  + 
+  scale_x_discrete(labels=c("CF2" = "Riparian CF", "I" = "Intervention", "IB" = "Interv. B", "R" = "Forest")) +
+  scale_y_discrete(labels=c("CF" = "Counterfactual", "CF2" = "Riparial CF", "I" = "Intervention", "IB" = "Interv. B"))
 
 
-ggsave("RTerraDistHeatmap_2023.pdf",
+ggsave("RTerraDistHeatmap_2023_v3.pdf",
        plot = typeHeatmap,
        device = "pdf",
-       path = "OutputImages/",
+       path = "IMAGES/IMAGES_KAREN_V3/",
        width = 8,
        height = 6,
        units = "in",
@@ -378,7 +464,7 @@ library("factoextra")
 pca_repl <- compMatrix2023 %>%
     PCA(., scale.unit = F, graph = F)
 
-fviz_pca_ind(
+viz_pcaRepl <- fviz_pca_ind(
     pca_repl,
     geom.ind = "point",
     col.ind = str_split_fixed(rownames(compMatrix2023), "-",5)[,4],
@@ -390,13 +476,28 @@ fviz_pca_ind(
     palette = supportingColorPalette[c(1:8)]
 )
 
+ggpubr::ggpar(viz_pcaRepl,
+              title = "Community Composition Visualization using PCA",
+              subtitle = paste0(phylum, collapse = " "), xlab = F, ylab = F, tickslab = F
+)
+
+ggsave("RTerraPCArepl_2023_v3.pdf",
+       plot = last_plot(),
+       device = "pdf",
+       path = "IMAGES/IMAGES_KAREN_V3/",
+       width = 8,
+       height = 5,
+       units = "in",
+       dpi = 300
+)
+
 
 # create LC-Site pca
 pca_LCplots <- compSite2023 %>%
     PCA(., scale.unit = F, graph = F)
 
 groupstemp <- str_split_fixed(rownames(compSite2023), "-",2)[,1]
-groupstemp[groupstemp %in% c("IA", "IB")] <- "I"
+# groupstemp[groupstemp %in% c("IA", "IB")] <- "I"
 
 viz_pcaLCPlots <- fviz_pca_ind(
     pca_LCplots,

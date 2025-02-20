@@ -115,21 +115,7 @@ samplesIDNoPreserve <- c("EM135c2_Tbio3_3_I_R1",
                          "EM135c2_Tbio3_3_CF_R3")
 
 
-inocas2023Info %>% select(EcoMolID, purityDNA) %>% 
-  mutate(code = str_split(EcoMolID, "_", simplify = T)[,4]) %>%
-  left_join(., y = lulut, by = "code") %>%
-  mutate(preserve = if_else(EcoMolID %in% samplesIDNoPreserve, "No preservation", "Silica")) %>% filter(preserve == "") %>%
-  ggplot(aes(x = lutype, y = purityDNA)) + geom_boxplot(outlier.shape = NA) + 
-  geom_jitter(aes(col=lutype),width = 0.1) + 
-  geom_text(aes(label = preserve), nudge_x = 0.2, size = 5) +
-  labs(color = "Site Type", y = "Purity (nm)",
-       x = "Site Type")+
-  scale_color_manual(values = supportingColorPalette[c(1,3,4)])+
-  theme(axis.title.x = element_text(size = 16),
-        axis.title.y = element_text(size = 16),
-        axis.text.x = element_text(size = 14))
-
-inocas2023Info %>% select(EcoMolID, purityDNA) %>% 
+inocas2023Info %>% dplyr::select(EcoMolID, purityDNA) %>% 
   mutate(code = str_split(EcoMolID, "_", simplify = T)[,4]) %>%
   left_join(., y = lulut, by = "code") %>%
   mutate(preserve = if_else(EcoMolID %in% samplesIDNoPreserve, "No preservation", "Silica")) %>%
@@ -152,7 +138,7 @@ if (saveplots)
 # Concentration was imported as character -> convert to numeric
 inocas2023Info <- inocas2023Info%>% mutate(concentrationDNA_nguL = as.numeric(str_trim(concentrationDNA_nguL)))
 
-inocas2023Info %>% select(EcoMolID, concentrationDNA_nguL) %>% 
+inocas2023Info %>% dplyr::select(EcoMolID, concentrationDNA_nguL) %>% 
   mutate(code = str_split(EcoMolID, "_", simplify = T)[,4]) %>%
   left_join(., y = lulut, by = "code") %>%
   mutate(preserve = if_else(EcoMolID %in% samplesIDNoPreserve, "No preservation", "Silica")) %>%
@@ -172,7 +158,7 @@ dstdir <- "D:/OneDrive - CGIAR/Documents/CALPSE/Terrabio/ABF_DEALS/INOCAS/BIODIV
 dstfile <- "sampleTotalAbundance_landuse_unfiltered.png"
 #dstfile <- paste(dstdir, dstfile, sep = "/")
 inocas2023Raw %>%
-  select(sample, sampleTotalAbd) %>% distinct() %>%
+  dplyr::select(sample, sampleTotalAbd) %>% distinct() %>%
   mutate(code = str_split(sample, "-", simplify = T)[,3]) %>%
   left_join(., y = lulut, by = "code") %>%
   ggplot(aes(x = lutype, y = sampleTotalAbd)) + geom_point() +
@@ -185,7 +171,7 @@ if (saveplots)
 #--- sample abundance per land use (differences in preservation method)
 
 inocas2023Raw %>%
-  select(sample, sampleTotalAbd) %>% 
+  dplyr::select(sample, sampleTotalAbd) %>% 
   mutate(preserve = if_else(sample %in% str_replace(str_replace_all(samplesIDNoPreserve, "_", "-"), "-Tbio3-", "-"), "No preservation", "Silica")) %>%
   distinct() %>%
   mutate(code = str_split(sample, "-", simplify = T)[,3]) %>%
@@ -201,7 +187,7 @@ if (saveplots)
 
 
 #-- ASV absolute abundance per land use (unfiltered data)
-inocas2023Raw %>% select(metadata_3, asvAbsoluteAbundance) %>%
+inocas2023Raw %>% dplyr::select(metadata_3, asvAbsoluteAbundance) %>%
   left_join(., y = lulut, by = c("metadata_3" = "code")) %>%
   ggplot(aes(x = lutype, y = asvAbsoluteAbundance)) +
   geom_boxplot() + labs(x = "Land use type",
@@ -221,24 +207,24 @@ if (saveplots)
 # We know we have man unidentified ASVs -> remove them first.
 
 #***** Order level
-asvCountUnfiltered <- inocas2023Raw %>% select(phylumBLASTn, order_BLASTn) %>%
+asvCountUnfiltered <- inocas2023Raw %>% dplyr::select(phylumBLASTn, order_BLASTn) %>%
   #mutate(code = str_split(sample, "-", simplify = TRUE)[,3]) %>%
-  filter(phylumBLASTn == "Arthropoda") %>% select(order_BLASTn) %>% table() %>% as.data.frame() %>% arrange(desc(Freq))
+  filter(phylumBLASTn == "Arthropoda") %>% dplyr::select(order_BLASTn) %>% table() %>% as.data.frame() %>% arrange(desc(Freq))
 
 asvCountUnfiltered %>% ggplot(aes(reorder(order_BLASTn, -Freq), Freq)) + geom_col() + coord_flip() + ggtitle("All samples") +
   labs(x = "Order",
        y = "ASV Count")+
   theme(plot.title = element_text(hjust = 0.5))
 
-asvCountUnfilteredNoPreserve <- inocas2023Raw %>% select(phylumBLASTn, order_BLASTn, metadata_3, sample) %>%
+asvCountUnfilteredNoPreserve <- inocas2023Raw %>% dplyr::select(phylumBLASTn, order_BLASTn, metadata_3, sample) %>%
   left_join(., y = lulut, by = c("metadata_3" = "code")) %>%
   mutate(preserve = if_else(sample %in% str_replace(str_replace_all(samplesIDNoPreserve, "_", "-"), "-Tbio3-", "-"), "No preservation", "Silica")) %>% 
   filter(preserve == "No preservation") %>%
-  filter(phylumBLASTn == "Arthropoda") %>% select(order_BLASTn) %>% table() %>% as.data.frame() %>% arrange(desc(Freq))
+  filter(phylumBLASTn == "Arthropoda") %>% dplyr::select(order_BLASTn) %>% table() %>% as.data.frame() %>% arrange(desc(Freq))
 
 asvCountUnfilteredNoPreserve <- asvCountUnfilteredNoPreserve %>% rename(flag = Freq) %>% mutate(flag = "No silica") %>% right_join(., asvCountUnfiltered) %>% mutate(flag = if_else(is.na(flag), "Missing", flag))
 
-flag_sorted <- asvCountUnfilteredNoPreserve %>% select(Freq, flag) %>% arrange(-Freq)
+flag_sorted <- asvCountUnfilteredNoPreserve %>% dplyr::select(Freq, flag) %>% arrange(-Freq)
 
 #>>> trying to apply colors to individual ticks in y axis
 #>>> This link was useful https://community.rstudio.com/t/axis-labels-with-individual-colors/77848
@@ -257,7 +243,7 @@ if (saveplots)
 
 
 #-- Let's check ASV abundance of the samples that did not have silica
-inocas2023Raw %>% select(metadata_3, asvAbsoluteAbundance, sample) %>%
+inocas2023Raw %>% dplyr::select(metadata_3, asvAbsoluteAbundance, sample) %>%
   left_join(., y = lulut, by = c("metadata_3" = "code")) %>%
   mutate(preserve = if_else(sample %in% str_replace(str_replace_all(samplesIDNoPreserve, "_", "-"), "-Tbio3-", "-"), "No preservation", "Silica")) %>% 
   filter(preserve == "No preservation") %>%
@@ -332,7 +318,7 @@ inocas2023Filtered <- inocas2023Filtered[ inocas2023Filtered$phylumBLASTn %in% p
 # Exploratory data analysis ----
 
 #-- ASV absolute abundance per land use (filtered data)
-inocas2023Filtered %>% select(metadata_3, asvAbsoluteAbundance) %>%
+inocas2023Filtered %>% dplyr::select(metadata_3, asvAbsoluteAbundance) %>%
   left_join(., y = lulut, by = c("metadata_3" = "code")) %>%
   ggplot(aes(x = lutype, y = asvAbsoluteAbundance)) +
   geom_boxplot() + labs(x = "Land use type",
@@ -351,7 +337,7 @@ if (saveplots)
 
 # Some high values in intervention and reference sites - What are they?
 # Values in question are those > 5000 in intervention and > 1000 in reference
-t(inocas2023Raw %>% select(metadata_3,
+t(inocas2023Raw %>% dplyr::select(metadata_3,
                            asvAbsoluteAbundance,
                            colnames(.)[grepl("BLASTn", colnames(.))]) %>%
     left_join(., y = lulut, by = c("metadata_3" = "code")) %>%

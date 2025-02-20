@@ -20,8 +20,8 @@ library(stringr)
 library(dplyr)
 
 # source functions
-source("../../../RCode/R_Scripts/triplet_fixer.R")
-source("functions.R")
+source("../../../RCode/KDyson_R_Scripts/triplet_fixer.R")
+source("../../functions.R")
 
 # script variable definitions
 minlibrarySize = 5000
@@ -42,9 +42,9 @@ phylum = c("Arthropoda")
 ## ingest data
 
 ## common data
-lookupColnames <- read.csv("lookupColnames.csv")
-lookupSitenames2022 <- read.csv("CafeApui/YR1_2022/lookupSitenames2022.csv", strip.white = T)
-lookupSitenames2023 <- read.csv("CafeApui/YR2_2023/lookupSitenames2023.csv", strip.white = T)
+lookupColnames <- read.csv("../../lookupColnames.csv")
+lookupSitenames2022 <- read.csv("../YR1_2022/lookupSitenames2022.csv", strip.white = T)
+lookupSitenames2023 <- read.csv("../YR2_2023/lookupSitenames2023.csv", strip.white = T)
 
 
 # 2022 eDNA data import
@@ -52,7 +52,7 @@ lookupSitenames2023 <- read.csv("CafeApui/YR2_2023/lookupSitenames2023.csv", str
 temp <- lookupColnames[order(lookupColnames$EM_OrderCApui2022), ] 
 temp <- temp$TB_ColName[which(!is.na(temp$EM_ColNameCApui2022) & !is.na(temp$EM_OrderCApui2022))]
 
-apui2022Raw <- read.csv("CafeApui/YR1_2022/Apui_2022_bioinfo_results.csv",
+apui2022Raw <- read.csv("../YR1_2022/Apui_2022_bioinfo_results.csv",
                        stringsAsFactors = F,
                        col.names = temp)
 apui2022Raw$ASVHeader <- str_sub(apui2022Raw$ASVHeader, 2, -1) # strips the > from the ASV header
@@ -61,7 +61,7 @@ apui2022Raw$ASVHeader <- str_sub(apui2022Raw$ASVHeader, 2, -1) # strips the > fr
 temp <- lookupColnames[order(lookupColnames$EM_OrderCApui2023), ] 
 temp <- temp$TB_ColName[which(!is.na(temp$EM_ColNameCApui2023) & !is.na(temp$EM_OrderCApui2023))]
 
-apui2023Raw <- read.csv("CafeApui/YR2_2023/Apui_2023_bioinfo_results.csv",
+apui2023Raw <- read.csv("../YR2_2023/Apui_2023_bioinfo_results.csv",
                          stringsAsFactors = F,
                          col.names = temp)
 apui2023Raw$ASVHeader <- str_sub(apui2023Raw$ASVHeader, 2, -1) # strips the > from the ASV header

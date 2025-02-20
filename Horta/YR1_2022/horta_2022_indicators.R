@@ -17,14 +17,14 @@ library(compositions)
 library(zCompositions)
 library(iNEXT)
 
-source("allianceBranding.R")
-source("functions.R")
+source("../../allianceBranding.R")
+source("../../functions.R")
 
-source("../../../RCode/R_Scripts/triplet_fixer.R") # From my github repository
-source("../../../RCode/R_Scripts/repeat_multipatt.R") # ditto
+source("../../../RCode/KDyson_R_Scripts/triplet_fixer.R") # From my github repository
+source("../../../RCode/KDyson_R_Scripts/repeat_multipatt.R") # ditto
 
 source("horta_2022_data_processing.R")
-remove(list = grep("volume",ls(), value = T))
+#remove(list = grep("volume",ls(), value = T))
 remove(abundanceLetter)
 
 rare = 50

@@ -26,8 +26,8 @@ library(stringr)
 library(dplyr)
 
 # Ingest codes
-source("../../../../RCode/R_Scripts/triplet_fixer.R")
-source("functions.R")
+source("../../../RCode/KDyson_R_Scripts/triplet_fixer.R")
+source("../../functions.R")
 
 # script variable definitions
 minlibrarySize = 5000
@@ -47,8 +47,8 @@ phylum = c("Arthropoda")
 ## Ingest 2023 data.
 
 ## common data
-lookupColnames <- read.csv("lookupColnames.csv")
-lookupSitenames2023 <- read.csv("Reforesterra/YR1_2023/lookupSitename2023.csv", strip.white = T)
+lookupColnames <- read.csv("../../lookupColnames.csv")
+lookupSitenames2023 <- read.csv("lookupSitename2023.csv", strip.white = T)
 
 # remove Tbio-RTERRA-5-CF-R2 from sitenames because it failed and is not in the ASV data.
 lookupSitenames2023 <- lookupSitenames2023[lookupSitenames2023$sample.code != "Tbio-RTERRA-5-CF-R2",]
@@ -65,7 +65,7 @@ infoColnames2023 <- c("N", "sampleID", "siteType", "labVolume",
         temp <- lookupColnames[order(lookupColnames$EM_OrderRTerra2023), ] 
         temp <- temp$TB_ColName[which(!is.na(temp$EM_ColNameRTerra2023) & !is.na(temp$EM_OrderRTerra2023))]
 
-    rterra2023Raw <- read.csv("Reforesterra/YR1_2023/Reforesterra-Complete_analysis_results-2023-10-25.csv",
+    rterra2023Raw <- read.csv("Reforesterra-Complete_analysis_results-2023-10-25.csv",
                              stringsAsFactors = F,
                              col.names = temp)
     
@@ -112,6 +112,16 @@ ggplot(rterra2023Filt, aes(x = phylumBLASTn)) +
 
 # For Reforesterra in 2023, metadata_2 is the site number, _3 through _5 are different codes for the lc, and _7 is the replicate. Can do this either by using the lookup table (merge + paste) or str_sub/str_replace_all. The challenge is that they have intervention A and B for one of the sites. There are also two types of counterfactual.
 
+
+# Intervention IA = Intervention
+lookupSitenames2023$sample.code <- sub("IA", "I", lookupSitenames2023$sample.code)
+lookupSitenames2023$treatment.code.original <- sub("IA", "I", lookupSitenames2023$treatment.code.original)
+
+rterra2023Filt$sample <- rterra2023Filt$sample %>% sub("Tbio-RTERRA-3-IA", "Tbio-RTERRA-3-I", .)
+
+# ... and remove the IB
+lookupSitenames2023 <- lookupSitenames2023[!grepl("IB", lookupSitenames2023$sample.code),]
+rterra2023Filt <- rterra2023Filt[!grepl("IB", rterra2023Filt$sample),]
 
 
 rterra2023Filt <- merge(rterra2023Filt,

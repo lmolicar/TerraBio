@@ -26,8 +26,8 @@ library(stringr)
 library(dplyr)
 
 # Ingest codes
-source("../../../RCode/R_Scripts/triplet_fixer.R")
-source("functions.R")
+source("../../../RCode/KDyson_R_Scripts/triplet_fixer.R")
+source("../../functions.R")
 
 # script variable definitions
 minlibrarySize = 5000
@@ -48,9 +48,9 @@ phylum = c("Arthropoda")
 ## First ingest 2022 and 2023 data.
 
 ## common data
-lookupColnames <- read.csv("lookupColnames.csv")
-lookupSitenames2022 <- read.csv("Horta/YR1_2022/lookupSitename2022.csv", strip.white = T)
-lookupSitenames2023 <- read.csv("Horta/YR2_2023/lookupSitename2023.csv", strip.white = T)
+lookupColnames <- read.csv("../../lookupColnames.csv")
+lookupSitenames2022 <- read.csv("../YR1_2022/lookupSitename2022.csv", strip.white = T)
+lookupSitenames2023 <- read.csv("lookupSitename2023.csv", strip.white = T)
 
 infoColnames2022 <- c("N", "storage", "volumeSampleID",
                   "replicate", "replicateVolume",
@@ -67,10 +67,10 @@ infoColnames2023 <- c("N", "sampleID", "siteType", "labVolume",
 # information, and preservation method information to sort out
         temp <- lookupColnames$TB_ColName[which(!is.na(lookupColnames$EM_ColName2022))]
         
-    horta2022Raw <- read.csv("Horta/Yr1_2022/Horta_2022_bioinfo_results.csv",
+    horta2022Raw <- read.csv("../YR1_2022/Horta_2022_bioinfo_results.csv",
                             stringsAsFactors = F,
                             col.names = temp) 
-    horta2022Info <- read.csv("Horta/Yr1_2022/HortaSamples2022.csv",
+    horta2022Info <- read.csv("../YR1_2022/HortaSamples2022.csv",
                           stringsAsFactors = F,
                           col.names = infoColnames2022,
                           header = T)
@@ -79,17 +79,17 @@ infoColnames2023 <- c("N", "sampleID", "siteType", "labVolume",
         temp <- lookupColnames[order(lookupColnames$EM_Order2023), ] 
         temp <- temp$TB_ColName[which(!is.na(temp$EM_ColName2023) & !is.na(temp$EM_Order2023))]
 
-    horta2023Raw <- read.csv("Horta/Yr2_2023/Horta_2023_bioinfo_results.csv",
+    horta2023Raw <- read.csv("../YR2_2023/Horta_2023_bioinfo_results.csv",
                              stringsAsFactors = F,
                              col.names = temp)
-    horta2023Info <- read.csv("Horta/Yr2_2023/HortaSamples2023.csv",
+    horta2023Info <- read.csv("..//YR2_2023/HortaSamples2023.csv",
                               stringsAsFactors = F,
                               col.names = infoColnames2023,
                               header = T)
     
 
-    ecoMolRawSummary(horta2022Raw)
-    ecoMolRawSummary(horta2023Raw)
+    #ecoMolRawSummary(horta2022Raw)
+    #ecoMolRawSummary(horta2023Raw)
     
     horta2023Raw %>%
         group_by(identificationMaxTaxon) %>%
@@ -216,8 +216,8 @@ table(horta2023Filt$phylumBLASTn)
         remove(temp)
         
         
-        ecoMolFiltSummary(horta2022Filt)
-        ecoMolFiltSummary(horta2023Filt) # many more reads after filtering
+        #ecoMolFiltSummary(horta2022Filt)
+        #ecoMolFiltSummary(horta2023Filt) # many more reads after filtering
         
         
 # This identifies sequences in both years' data--this suggests it is probably a
